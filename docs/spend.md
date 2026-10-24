@@ -53,4 +53,4 @@ TLS and IP filtering in front of it and strip that CORS header on
 | `/key/info`                                             | working         | Spend per virtual key.                                              |
 | Prometheus `/metrics`                                   | working         | Needs the `prometheus` callback. Resets on restart.                 |
 | `/global/spend/report`, `/{user,key,team}/spend/report` | enterprise-only |                                                                     |
-| Admin UI usage pages                                    | not yet checked |                                                                     |
+| Admin UI usage pages                                    | working         | Per-user spend, at http://localhost:4000/ui/.                       |
