@@ -82,7 +82,7 @@ Full step-by-step instructions with the PATH gotcha are in
   ([docs/spend.md](docs/spend.md)), and agent conventions
   (`docs/agents/`).
 - `GLOSSARY.md` — the project's language: virtual key, login
-  helper, key broker.
+  helper, key broker, spend.
 - `go.work` — workspace for the two Go modules.
 - `Makefile` — builds both Go modules.
 - `docker-compose.yml` — postgres, keycloak, litellm and key-broker.
