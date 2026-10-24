@@ -63,6 +63,7 @@ func main() {
 	mux.HandleFunc("GET /login", b.handleLogin)
 	mux.HandleFunc("GET /callback", b.handleCallback)
 	mux.HandleFunc("POST /redeem", b.handleRedeem)
+	mux.HandleFunc("GET /remote-config", b.handleRemoteConfig)
 	log.Fatal(http.ListenAndServe(":8090", mux))
 }
 
@@ -125,10 +126,10 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 func (b *broker) mintKey(ctx context.Context, user, email string) (string, error) {
 	// LiteLLM answers 409 when the user exists, which a second login hits.
-	if _, err := b.litellm(ctx, "/user/new", map[string]any{"user_id": user, "user_email": email, "auto_create_key": false}); err != nil && !errors.Is(err, errConflict) {
+	if _, err := b.litellm(ctx, "POST", "/user/new", map[string]any{"user_id": user, "user_email": email, "auto_create_key": false}); err != nil && !errors.Is(err, errConflict) {
 		return "", err
 	}
-	out, err := b.litellm(ctx, "/key/generate", map[string]string{"user_id": user, "duration": "14d"})
+	out, err := b.litellm(ctx, "POST", "/key/generate", map[string]string{"user_id": user, "duration": "14d"})
 	if err != nil {
 		return "", err
 	}
@@ -141,16 +142,25 @@ func (b *broker) mintKey(ctx context.Context, user, email string) (string, error
 	return res.Key, nil
 }
 
-var errConflict = errors.New("status 409")
+var (
+	errConflict = errors.New("status 409")
+	errNotFound = errors.New("status 404")
+)
 
-func (b *broker) litellm(ctx context.Context, path string, body any) ([]byte, error) {
-	buf, _ := json.Marshal(body)
-	req, err := http.NewRequestWithContext(ctx, "POST", b.litellmURL+path, bytes.NewReader(buf))
+func (b *broker) litellm(ctx context.Context, method, path string, body any) ([]byte, error) {
+	var rd io.Reader
+	if body != nil {
+		buf, _ := json.Marshal(body)
+		rd = bytes.NewReader(buf)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, b.litellmURL+path, rd)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+b.masterKey)
-	req.Header.Set("Content-Type", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	resp, err := b.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -159,6 +169,9 @@ func (b *broker) litellm(ctx context.Context, path string, body any) ([]byte, er
 	out, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode == http.StatusConflict {
 		return nil, fmt.Errorf("%s: %w", path, errConflict)
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("%s: %w", path, errNotFound)
 	}
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("%s: status %d", path, resp.StatusCode)

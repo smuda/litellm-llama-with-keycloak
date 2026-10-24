@@ -3,6 +3,10 @@
     "command": ["login-helper", "http://localhost:8090"],
     "env": "LITELLM_API_KEY"
   },
+  "remote_config": {
+    "url": "http://localhost:8090/remote-config",
+    "headers": { "Authorization": "Bearer {env:LITELLM_API_KEY}" }
+  },
   "config": {
     "model": "litellm/medium",
     "provider": {

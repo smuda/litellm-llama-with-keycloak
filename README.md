@@ -28,6 +28,11 @@ opencode authenticates against the key broker at
 6. opencode then calls LiteLLM at `http://localhost:4000/v1` with
    the model name `medium`; LiteLLM forwards each request to
    llama-server on the host at `http://host.docker.internal:9931`.
+7. On every start opencode fetches the key broker's
+   `/remote-config` with the stored key. With fewer than 7 days
+   left, or an unknown key, the broker answers with an HTML page and
+   opencode refuses to start with a login error; re-running
+   `opencode auth login` mints a new key.
 
 ## Components
 
@@ -66,7 +71,7 @@ Full step-by-step instructions with the PATH gotcha are in
 ## Repository layout
 
 - `key-broker/` — Go service: OIDC flow, key minting, `/redeem`,
-  and the served `opencode.json`.
+  `/remote-config` and the served `opencode.json`.
 - `login-helper/` — Go program opencode runs on the developer's
   machine.
 - `litellm/config.yaml` — LiteLLM `model_list` and settings.
@@ -98,8 +103,5 @@ Full step-by-step instructions with the PATH gotcha are in
 - Login state and one-time codes live in the key broker's memory, so
   a broker restart mid-login fails that login. Each works once and
   expires after 5 minutes.
-- opencode does not yet refuse to start when the key has fewer than
-  7 days left (#14). For now, re-run `opencode auth login` before
-  the 14 days run out.
 - Each login mints a new key. Older keys are not revoked; they
   expire.
