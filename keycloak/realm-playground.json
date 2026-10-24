@@ -1,0 +1,30 @@
+{
+  "realm": "playground",
+  "enabled": true,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "key-broker",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "secret": "${KEY_BROKER_CLIENT_SECRET}",
+      "redirectUris": ["http://localhost:8090/callback"]
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@example.com",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Example",
+      "credentials": [
+        { "type": "password", "value": "${ALICE_PASSWORD}", "temporary": false }
+      ]
+    }
+  ]
+}

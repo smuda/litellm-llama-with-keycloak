@@ -1,0 +1,21 @@
+{
+  "auth": {
+    "command": ["login-helper", "http://localhost:8090"],
+    "env": "LITELLM_API_KEY"
+  },
+  "config": {
+    "model": "litellm/medium",
+    "provider": {
+      "litellm": {
+        "npm": "@ai-sdk/openai-compatible",
+        "options": {
+          "baseURL": "http://localhost:4000/v1",
+          "apiKey": "{env:LITELLM_API_KEY}"
+        },
+        "models": {
+          "medium": { "limit": { "context": 65536, "output": 8192 } }
+        }
+      }
+    }
+  }
+}

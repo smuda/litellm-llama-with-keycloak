@@ -1,0 +1,75 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      LITELLM_DB_PASSWORD: ${LITELLM_DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/initdb.sh:/docker-entrypoint-initdb.d/initdb.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KEY_BROKER_CLIENT_SECRET: ${KEY_BROKER_CLIENT_SECRET}
+      ALICE_PASSWORD: ${ALICE_PASSWORD}
+    volumes:
+      - ./keycloak/realm-playground.json:/opt/keycloak/data/import/realm-playground.json:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.106.2
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      DATABASE_URL: postgresql://litellm:${LITELLM_DB_PASSWORD}@postgres:5432/litellm
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml:ro
+    ports:
+      - "127.0.0.1:4000:4000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  key-broker:
+    build: ./key-broker
+    environment:
+      PUBLIC_URL: http://localhost:8090
+      OIDC_ISSUER: http://localhost:8080/realms/playground
+      OIDC_DISCOVERY_URL: http://keycloak:8080/realms/playground
+      OIDC_CLIENT_ID: key-broker
+      OIDC_CLIENT_SECRET: ${KEY_BROKER_CLIENT_SECRET}
+      LITELLM_URL: http://litellm:4000
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      WELLKNOWN_PATH: /config/opencode.json
+    volumes:
+      - ./key-broker/opencode.json:/config/opencode.json:ro
+    ports:
+      - "127.0.0.1:8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
