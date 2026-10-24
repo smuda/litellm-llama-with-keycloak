@@ -105,3 +105,7 @@ Full step-by-step instructions with the PATH gotcha are in
   expires after 5 minutes.
 - Each login mints a new key. Older keys are not revoked; they
   expire.
+- The key is minted when the login helper redeems its code. If the
+  helper gives up mid-redeem (its 30 s timeout or Ctrl-C) after
+  LiteLLM has created the key, nobody receives that key and it stays
+  valid until it expires.
