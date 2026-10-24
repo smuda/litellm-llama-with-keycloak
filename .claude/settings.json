@@ -8,5 +8,10 @@
       "Routine commands: git status/diff/log/add/commit, gh issue/pr/label, docker compose up/down/logs/ps, curl against localhost services.",
       "CI/CD deploy targets: none."
     ]
+  },
+  "sandbox": {
+    "network": {
+      "allowLocalBinding": true
+    }
   }
 }
