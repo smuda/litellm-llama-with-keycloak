@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -129,8 +130,8 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *broker) mintKey(ctx context.Context, user, email string) (string, error) {
-	// ponytail: "user already exists" is not handled, that is #15.
-	if _, err := b.litellm(ctx, "/user/new", map[string]any{"user_id": user, "user_email": email, "auto_create_key": false}); err != nil {
+	// LiteLLM answers 409 when the user exists, which a second login hits.
+	if _, err := b.litellm(ctx, "/user/new", map[string]any{"user_id": user, "user_email": email, "auto_create_key": false}); err != nil && !errors.Is(err, errConflict) {
 		return "", err
 	}
 	out, err := b.litellm(ctx, "/key/generate", map[string]string{"user_id": user, "duration": "14d"})
@@ -146,6 +147,8 @@ func (b *broker) mintKey(ctx context.Context, user, email string) (string, error
 	return res.Key, nil
 }
 
+var errConflict = errors.New("status 409")
+
 func (b *broker) litellm(ctx context.Context, path string, body any) ([]byte, error) {
 	buf, _ := json.Marshal(body)
 	req, err := http.NewRequestWithContext(ctx, "POST", b.litellmURL+path, bytes.NewReader(buf))
@@ -160,6 +163,9 @@ func (b *broker) litellm(ctx context.Context, path string, body any) ([]byte, er
 	}
 	defer resp.Body.Close()
 	out, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode == http.StatusConflict {
+		return nil, fmt.Errorf("%s: %w", path, errConflict)
+	}
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("%s: status %d", path, resp.StatusCode)
 	}
