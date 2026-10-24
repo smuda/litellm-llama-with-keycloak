@@ -17,7 +17,7 @@ opencode authenticates against the key broker at
    `127.0.0.1`, and opens the browser at
    `/login?port=...&challenge=...`.
 3. The key broker starts an OIDC authorization code flow with
-   Keycloak (realm `playground`). The user logs in as `alice`.
+   Keycloak (realm `playground`). The user logs in as `alice` or `bob`.
 4. Keycloak redirects back to the key broker's `/callback`. It
    exchanges the code, verifies the id token, creates the LiteLLM
    user if it does not exist, and mints a 14 day virtual key.
@@ -34,7 +34,7 @@ opencode authenticates against the key broker at
 - llama-server (host): serves Qwen3.8-27B; see
   [docs/model-and-context.md](docs/model-and-context.md).
 - keycloak (Docker, 26.6, dev mode): identity provider, realm
-  `playground`, user `alice`.
+  `playground`, users `alice` and `bob`.
 - litellm (Docker, v1.106.2): maps the model name `medium` to
   llama-server and tracks per-user keys.
 - key-broker (Docker, Go): OIDC login, mints virtual keys, serves
@@ -61,7 +61,7 @@ Full step-by-step instructions with the PATH gotcha are in
 5. Link `login-helper/bin/login-helper` into a directory on your
    login `PATH` (opencode's service does not see shell exports).
 6. `opencode auth login http://localhost:8090`, log in as `alice`
-   with `ALICE_PASSWORD` from `.env`.
+   with `ALICE_PASSWORD` (or `bob` with `BOB_PASSWORD`) from `.env`.
 
 ## Repository layout
 
@@ -70,7 +70,7 @@ Full step-by-step instructions with the PATH gotcha are in
 - `login-helper/` — Go program opencode runs on the developer's
   machine.
 - `litellm/config.yaml` — LiteLLM `model_list` and settings.
-- `keycloak/realm-playground.json` — realm, `alice`, and the
+- `keycloak/realm-playground.json` — realm, `alice`, `bob`, and the
   `key-broker` confidential client.
 - `postgres/initdb.sh` — creates the two databases.
 - `docs/` — local testing, model and context choice, and agent
@@ -95,10 +95,9 @@ Full step-by-step instructions with the PATH gotcha are in
 
 ## Known limitations
 
-- The key broker's in-memory store never evicts entries: a redeemed
-  code can be replayed until the container restarts. TTLs and
-  single-use codes are tracked in issue #15.
-- The realm has only `alice`; `bob` is added in #15.
+- Login state and one-time codes live in the key broker's memory, so
+  a broker restart mid-login fails that login. Each works once and
+  expires after 5 minutes.
 - opencode does not yet refuse to start when the key has fewer than
   7 days left (#14). For now, re-run `opencode auth login` before
   the 14 days run out.

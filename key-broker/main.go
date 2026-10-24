@@ -77,16 +77,12 @@ func (b *broker) handleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	b.st.mu.Lock()
-	b.st.logins[state] = pending{port: port, challenge: challenge}
-	b.st.mu.Unlock()
+	put(b.st, b.st.logins, state, pending{port: port, challenge: challenge})
 	http.Redirect(w, r, b.oauth.AuthCodeURL(state), http.StatusFound)
 }
 
 func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
-	b.st.mu.Lock()
-	p, ok := b.st.logins[r.URL.Query().Get("state")]
-	b.st.mu.Unlock()
+	p, ok := take(b.st, b.st.logins, r.URL.Query().Get("state"))
 	if !ok {
 		http.Error(w, "unknown state", http.StatusBadRequest)
 		return
@@ -123,9 +119,7 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	b.st.mu.Lock()
-	b.st.codes[code] = issued{key: key, challenge: p.challenge}
-	b.st.mu.Unlock()
+	put(b.st, b.st.codes, code, issued{key: key, challenge: p.challenge})
 	http.Redirect(w, r, fmt.Sprintf("http://127.0.0.1:%s/done?code=%s", p.port, url.QueryEscape(code)), http.StatusFound)
 }
 

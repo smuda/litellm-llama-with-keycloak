@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -12,16 +13,50 @@ import (
 type pending struct{ port, challenge string }
 type issued struct{ key, challenge string }
 
-// ponytail: entries are never removed, so memory grows and a code can be
-// redeemed again until restart; TTL and single-use are #15.
+// Login state and one-time codes expire this long after creation.
+const ttl = 5 * time.Minute
+
+type entry[V any] struct {
+	v       V
+	expires time.Time
+}
+
 type store struct {
 	mu     sync.Mutex
-	logins map[string]pending
-	codes  map[string]issued
+	now    func() time.Time
+	logins map[string]entry[pending]
+	codes  map[string]entry[issued]
 }
 
 func newStore() *store {
-	return &store{logins: map[string]pending{}, codes: map[string]issued{}}
+	return &store{now: time.Now, logins: map[string]entry[pending]{}, codes: map[string]entry[issued]{}}
+}
+
+// put sweeps expired entries from m on every insert so unredeemed ones don't pile up.
+// ponytail: O(n) sweep per insert, fine at playground volume.
+func put[V any](s *store, m map[string]entry[V], k string, v V) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := s.now()
+	for key, e := range m {
+		if !now.Before(e.expires) {
+			delete(m, key)
+		}
+	}
+	m[k] = entry[V]{v: v, expires: now.Add(ttl)}
+}
+
+// take removes k whatever the outcome, so a state or code works at most once.
+func take[V any](s *store, m map[string]entry[V], k string) (V, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e, ok := m[k]
+	delete(m, k)
+	if !ok || !s.now().Before(e.expires) {
+		var zero V
+		return zero, false
+	}
+	return e.v, true
 }
 
 type broker struct {
@@ -43,9 +78,7 @@ func (b *broker) handleRedeem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	b.st.mu.Lock()
-	c, ok := b.st.codes[req.Code]
-	b.st.mu.Unlock()
+	c, ok := take(b.st, b.st.codes, req.Code)
 	if !ok || !verifyChallenge(req.Verifier, c.challenge) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return

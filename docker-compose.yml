@@ -28,6 +28,7 @@ services:
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KEY_BROKER_CLIENT_SECRET: ${KEY_BROKER_CLIENT_SECRET}
       ALICE_PASSWORD: ${ALICE_PASSWORD}
+      BOB_PASSWORD: ${BOB_PASSWORD}
     volumes:
       - ./keycloak/realm-playground.json:/opt/keycloak/data/import/realm-playground.json:ro
     ports:

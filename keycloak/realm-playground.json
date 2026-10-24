@@ -25,6 +25,17 @@
       "credentials": [
         { "type": "password", "value": "${ALICE_PASSWORD}", "temporary": false }
       ]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "email": "bob@example.com",
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "Example",
+      "credentials": [
+        { "type": "password", "value": "${BOB_PASSWORD}", "temporary": false }
+      ]
     }
   ]
 }
