@@ -9,7 +9,7 @@ reaches it under the LiteLLM model name `medium`.
 | Model             | Qwen3.8-27B            | Qwen3.8-27B            |
 | Quantisation      | Q4_K_M (19.0 GB)       | Q8_0                   |
 | Context (`-c`)    | 65536                  | 262144 (model maximum) |
-| Metal wired limit | raised to about 26 GB  | default is enough      |
+| Metal wired limit | default is enough      | default is enough      |
 | LiteLLM name      | `medium`               | `medium`               |
 
 ## Model and name
@@ -59,8 +59,8 @@ quantised builds against.
 
 ## Context size and memory
 
-On the 32 GB Mac, run `-c 65536` and raise the Metal wired limit to
-about 26 GB. On the 512 GB machine, run the full 262144.
+On the 32 GB Mac, run `-c 65536` on the default Metal wired limit.
+On the 512 GB machine, run the full 262144.
 
 - opencode's system prompt and tool definitions use roughly 10-15k
   tokens before the first message, so 32k fills fast in a coding
@@ -68,11 +68,13 @@ about 26 GB. On the 512 GB machine, run the full 262144.
 - The `qwen35` architecture is hybrid: most layers keep no KV cache,
   so the cache is far smaller than for a classic 27B model. It still
   grows with `-c`.
-- By default macOS lets Metal wire only about two thirds of RAM on a
-  32 GB Mac (approximate, from memory; verify in the build). That is
-  about 21 GB, barely above the 19 GB of weights.
-- Raise it with `sudo sysctl iogpu.wired_limit_mb=26624`. The setting
-  resets at reboot, so it is part of the startup steps.
+- On the 32 GB M4 Mac, with `iogpu.wired_limit_mb` at its default of
+  0, Metal reports `recommendedMaxWorkingSetSize` = 26800.6 MB
+  (25559 MiB), about 78% of RAM. Q4_K_M plus 64k loads and serves on
+  that, with Docker Desktop running.
+- Only if that stops fitting, raise it with
+  `sudo sysctl iogpu.wired_limit_mb=26624`. That buys about 1 GiB,
+  and the setting resets at reboot.
 - If 64k still does not fit, drop to `-c 32768`. Nothing else depends
   on this number.
 
@@ -86,9 +88,20 @@ llama-server runs, and check how the build shares `-c` across them.
 Playground (32 GB Mac):
 
 ```sh
-sudo sysctl iogpu.wired_limit_mb=26624
 llama-server -hf ggml-org/Qwen3.8-27B-GGUF:Q4_K_M --alias qwen3.8-27b \
   -c 65536 --host 127.0.0.1 --port 9931
+```
+
+With Homebrew llama.cpp 0.6.0 (build 11429), `-hf` fails with
+`get_repo_commit: HTTPLIB failed: SSL connection failed` even though
+curl reaches huggingface.co. Download the file with curl into
+`~/Library/Caches/llama.cpp/` and pass it with `-m` instead:
+
+```sh
+curl -L -C - -o ~/Library/Caches/llama.cpp/ggml-org_Qwen3.8-27B-GGUF_Qwen3.8-27B-Q4_K_M.gguf \
+  https://huggingface.co/ggml-org/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-Q4_K_M.gguf
+llama-server -m ~/Library/Caches/llama.cpp/ggml-org_Qwen3.8-27B-GGUF_Qwen3.8-27B-Q4_K_M.gguf \
+  --alias qwen3.8-27b -c 65536 --host 127.0.0.1 --port 9931
 ```
 
 Work (512 GB machine):
@@ -112,10 +125,11 @@ model_list:
 
 None of this has been run end to end yet.
 
-- [ ] Q4_K_M plus a 64k context fits under a 26 GB wired limit
-      alongside Docker.
-- [ ] The default Metal wired limit on the 32 GB Mac is really about
-      21 GB.
+- [ ] Q4_K_M plus a 64k context fits on the default wired limit
+      alongside the running compose stack. It loads and serves with
+      Docker Desktop idle; recheck once the stack is up.
+- [x] The default Metal wired limit on the 32 GB Mac: about 25 GiB
+      (25559 MiB), not the 21 GB first assumed.
 - [ ] The exact Q8_0 file and size in the ggml-org repo.
 - [ ] opencode handles streamed tool-call deltas and
       `reasoning_content` from this model.
