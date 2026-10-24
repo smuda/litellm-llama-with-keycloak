@@ -19,3 +19,9 @@ _Avoid_: auth command, CLI
 The service that logs a user in to Keycloak and turns that login into
 a virtual key, creating the LiteLLM user if it does not exist yet.
 _Avoid_: shim, bridge, key page
+
+**Spend**:
+The dollar amount LiteLLM charges a LiteLLM user for their requests.
+The model is self-hosted, so the per-token price behind it is nominal,
+chosen to sit between Claude Haiku and Claude Sonnet.
+_Avoid_: cost, usage, billing
