@@ -1,0 +1,12 @@
+{
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Repository visibility: public GitHub repo; anything pushed is world-readable.",
+      "Trusted repo: /Users/john/Projects/smuda/litellm-llama-with-keycloak, remote https://github.com/smuda/litellm-llama-with-keycloak.git.",
+      "Sensitive data: none yet in the repo; .env files, Keycloak realm exports with client secrets, and LiteLLM master/API keys are sensitive if added.",
+      "Routine commands: git status/diff/log/add/commit, gh issue/pr/label, docker compose up/down/logs/ps, curl against localhost services.",
+      "CI/CD deploy targets: none."
+    ]
+  }
+}
