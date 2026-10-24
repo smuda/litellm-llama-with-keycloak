@@ -3,6 +3,15 @@ model_list:
     litellm_params:
       model: hosted_vllm/qwen3.8-27b
       api_base: http://host.docker.internal:9931/v1
+      # Nominal price: the model is self-hosted. Chosen between Claude
+      # Haiku and Claude Sonnet.
+      input_cost_per_token: 0.000001
+      output_cost_per_token: 0.000005
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/DATABASE_URL
+litellm_settings:
+  # /metrics is unauthenticated here. In production nginx in front of
+  # LiteLLM provides TLS and IP filtering.
+  callbacks: ["prometheus"]
+  require_auth_for_metrics_endpoint: false

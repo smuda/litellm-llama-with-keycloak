@@ -78,8 +78,9 @@ Full step-by-step instructions with the PATH gotcha are in
 - `keycloak/realm-playground.json` — realm, `alice`, `bob`, and the
   `key-broker` confidential client.
 - `postgres/initdb.sh` — creates the two databases.
-- `docs/` — local testing, model and context choice, and agent
-  conventions (`docs/agents/`).
+- `docs/` — local testing, model and context choice, spend
+  ([docs/spend.md](docs/spend.md)), and agent conventions
+  (`docs/agents/`).
 - `GLOSSARY.md` — the project's language: virtual key, login
   helper, key broker.
 - `go.work` — workspace for the two Go modules.
