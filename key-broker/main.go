@@ -109,18 +109,12 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing claims", http.StatusBadGateway)
 		return
 	}
-	key, err := b.mintKey(r.Context(), claims.Username, claims.Email)
-	if err != nil {
-		log.Printf("mint key for %s failed: %v", claims.Username, err)
-		http.Error(w, "could not mint key", http.StatusBadGateway)
-		return
-	}
 	code, err := randomString()
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	put(b.st, b.st.codes, code, issued{key: key, challenge: p.challenge})
+	put(b.st, b.st.codes, code, issued{user: claims.Username, email: claims.Email, challenge: p.challenge})
 	http.Redirect(w, r, fmt.Sprintf("http://127.0.0.1:%s/done?code=%s", p.port, url.QueryEscape(code)), http.StatusFound)
 }
 

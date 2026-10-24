@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -11,7 +12,7 @@ import (
 )
 
 type pending struct{ port, challenge string }
-type issued struct{ key, challenge string }
+type issued struct{ user, email, challenge string }
 
 // Login state and one-time codes expire this long after creation.
 const ttl = 5 * time.Minute
@@ -83,6 +84,12 @@ func (b *broker) handleRedeem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
+	key, err := b.mintKey(r.Context(), c.user, c.email)
+	if err != nil {
+		log.Printf("mint key for %s failed: %v", c.user, err)
+		http.Error(w, "could not mint key", http.StatusBadGateway)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"key": c.key})
+	json.NewEncoder(w).Encode(map[string]string{"key": key})
 }
