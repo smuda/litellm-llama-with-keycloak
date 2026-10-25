@@ -1,0 +1,24 @@
+services:
+  keycloak: !reset null
+
+  nginx:
+    ports: !override
+      - "443:443"
+    volumes: !override
+      - ./nginx/production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/locations.conf:/etc/nginx/locations.conf:ro
+      - ./nginx/metrics-access.production.conf:/etc/nginx/metrics-access.conf:ro
+      - ${TLS_DIR:-/etc/nginx-tls}:/etc/nginx/tls:ro
+
+  # LiteLLM sees plain HTTP from nginx; this makes its redirects https.
+  litellm:
+    environment:
+      PROXY_BASE_URL: https://llm.example.internal
+
+  key-broker:
+    environment:
+      PUBLIC_URL: https://llm.example.internal/broker
+      OIDC_ISSUER: https://keycloak.example.internal/realms/playground
+      OIDC_DISCOVERY_URL: https://keycloak.example.internal/realms/playground
+    volumes:
+      - ./key-broker/opencode.production.json:/config/opencode.json:ro

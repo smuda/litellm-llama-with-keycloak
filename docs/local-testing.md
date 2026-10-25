@@ -51,9 +51,15 @@ The link follows rebuilds with `make build`.
 ## Log in
 
 ```sh
-opencode auth login http://localhost:8090
+opencode auth login http://localhost:4000/broker
 ```
 
 The browser opens Keycloak. Log in as `alice` with `ALICE_PASSWORD`
 from `.env`. The tab then says it can be closed, and opencode stores
 the virtual key.
+
+An existing Keycloak database keeps the old redirect URI, because
+`--import-realm` skips a realm that already exists. Update the
+`key-broker` client's redirect URI to
+`http://localhost:4000/broker/callback` in the admin console, or run
+`docker compose down -v` to start from a fresh database.

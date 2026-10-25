@@ -8,9 +8,9 @@ duration, so LiteLLM tracks usage per person instead of per machine.
 ## How it works
 
 opencode authenticates against the key broker at
-`http://localhost:8090`:
+`http://localhost:4000/broker`:
 
-1. `opencode auth login http://localhost:8090` fetches
+1. `opencode auth login http://localhost:4000/broker` fetches
    `/.well-known/opencode` from the key broker and runs the
    `login-helper` command it names.
 2. `login-helper` generates a PKCE verifier, starts a listener on
@@ -40,6 +40,8 @@ opencode authenticates against the key broker at
   [docs/model-and-context.md](docs/model-and-context.md).
 - keycloak (Docker, 26.6, dev mode): identity provider, realm
   `playground`, users `alice` and `bob`.
+- nginx (Docker, 1.28): the one entry point on port 4000; serves
+  LiteLLM at `/` and the key broker at `/broker`.
 - litellm (Docker, v1.106.2): maps the model name `medium` to
   llama-server and tracks per-user keys.
 - key-broker (Docker, Go): OIDC login, mints virtual keys, serves
@@ -48,9 +50,9 @@ opencode authenticates against the key broker at
   redeems the key for opencode.
 - postgres (Docker, 17): the `keycloak` and `litellm` databases.
 
-Host ports (all bound to `127.0.0.1`): 8080 Keycloak, 4000 LiteLLM,
-8090 key broker, 9931 llama-server. Postgres stays on the compose
-network.
+Host ports (all bound to `127.0.0.1`): 4000 nginx (LiteLLM at `/`,
+key broker at `/broker`), 8080 Keycloak, 9931 llama-server. Postgres,
+LiteLLM and the key broker stay on the compose network.
 
 ## Quick start
 
@@ -65,7 +67,7 @@ Full step-by-step instructions with the PATH gotcha are in
 4. `make build`
 5. Link `login-helper/bin/login-helper` into a directory on your
    login `PATH` (opencode's service does not see shell exports).
-6. `opencode auth login http://localhost:8090`, log in as `alice`
+6. `opencode auth login http://localhost:4000/broker`, log in as `alice`
    with `ALICE_PASSWORD` (or `bob` with `BOB_PASSWORD`) from `.env`.
 
 ## Repository layout
@@ -77,6 +79,8 @@ Full step-by-step instructions with the PATH gotcha are in
 - `litellm/config.yaml` — LiteLLM `model_list` and settings.
 - `keycloak/realm-playground.json` — realm, `alice`, `bob`, and the
   `key-broker` confidential client.
+- `nginx/` — nginx config: shared locations, playground and
+  production servers, `/metrics` access rules.
 - `postgres/initdb.sh` — creates the two databases.
 - `docs/` — local testing, model and context choice, spend
   ([docs/spend.md](docs/spend.md)), and agent conventions
@@ -85,9 +89,35 @@ Full step-by-step instructions with the PATH gotcha are in
   helper, key broker, spend.
 - `go.work` — workspace for the two Go modules.
 - `Makefile` — builds both Go modules.
-- `docker-compose.yml` — postgres, keycloak, litellm and key-broker.
+- `docker-compose.yml` — postgres, keycloak, litellm, key-broker and
+  nginx.
+- `docker-compose.prod.yml` — production override: no Keycloak, nginx
+  with TLS on 443, production URLs.
 - `.env.example` — the secrets `.env` must define; `.env` itself is
   gitignored.
+
+## Production
+
+Run with the override:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+- Replace the `llm.example.internal` and `keycloak.example.internal`
+  placeholders in `docker-compose.prod.yml` and
+  `key-broker/opencode.production.json`.
+- Replace the placeholder scraper IP in
+  `nginx/metrics-access.production.conf`.
+- Put the certificate and key in a directory as `tls.crt` and
+  `tls.key` and point `TLS_DIR` at it.
+- Register `https://<host>/broker/callback` as a redirect URI in the
+  production Keycloak.
+- Set `NODE_USE_SYSTEM_CA=1` so opencode trusts the internal CA. Not
+  yet verified against a real host.
+
+`make e2e` checks the playground stack and the production nginx
+config.
 
 ## Development
 

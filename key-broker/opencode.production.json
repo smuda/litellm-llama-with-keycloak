@@ -1,0 +1,25 @@
+{
+  "auth": {
+    "command": ["login-helper", "https://llm.example.internal/broker"],
+    "env": "LITELLM_API_KEY"
+  },
+  "remote_config": {
+    "url": "https://llm.example.internal/broker/remote-config",
+    "headers": { "Authorization": "Bearer {env:LITELLM_API_KEY}" }
+  },
+  "config": {
+    "model": "litellm/medium",
+    "provider": {
+      "litellm": {
+        "npm": "@ai-sdk/openai-compatible",
+        "options": {
+          "baseURL": "https://llm.example.internal/v1",
+          "apiKey": "{env:LITELLM_API_KEY}"
+        },
+        "models": {
+          "medium": { "limit": { "context": 262144, "output": 8192 } }
+        }
+      }
+    }
+  }
+}

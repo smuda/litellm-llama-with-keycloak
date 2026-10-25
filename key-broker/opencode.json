@@ -1,10 +1,10 @@
 {
   "auth": {
-    "command": ["login-helper", "http://localhost:8090"],
+    "command": ["login-helper", "http://localhost:4000/broker"],
     "env": "LITELLM_API_KEY"
   },
   "remote_config": {
-    "url": "http://localhost:8090/remote-config",
+    "url": "http://localhost:4000/broker/remote-config",
     "headers": { "Authorization": "Bearer {env:LITELLM_API_KEY}" }
   },
   "config": {

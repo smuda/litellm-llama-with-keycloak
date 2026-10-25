@@ -11,7 +11,7 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "secret": "${KEY_BROKER_CLIENT_SECRET}",
-      "redirectUris": ["http://localhost:8090/callback"]
+      "redirectUris": ["http://localhost:4000/broker/callback"]
     }
   ],
   "users": [

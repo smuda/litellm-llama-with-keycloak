@@ -39,9 +39,9 @@ per-user label is `user`. Counters reset when LiteLLM restarts.
 labels include `user_email`, `hashed_api_key`, `api_key_alias`,
 `client_ip`, `user_agent` and the upstream `api_base`. LiteLLM also
 sends `access-control-allow-origin: *`, so any web page open in a
-browser on this machine can read it. In production, put nginx with
-TLS and IP filtering in front of it and strip that CORS header on
-`/metrics`.
+browser on this machine can read it. The nginx in front strips
+that header on `/metrics` in both environments, and in production
+also restricts `/metrics` by IP.
 
 ## Sources
 
