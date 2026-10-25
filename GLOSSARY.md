@@ -25,3 +25,13 @@ The dollar amount LiteLLM charges a LiteLLM user for their requests.
 The model is self-hosted, so the per-token price behind it is nominal,
 chosen to sit between Claude Haiku and Claude Sonnet.
 _Avoid_: cost, usage, billing
+
+**Playground**:
+The whole system running on one developer's machine, for trying it
+out and testing changes before they reach production.
+_Avoid_: dev, local, test environment
+
+**Production**:
+The shared deployment developers use for real work, with Keycloak
+running on a machine of its own.
+_Avoid_: prod, live, server
