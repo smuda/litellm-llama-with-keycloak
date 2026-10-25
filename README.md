@@ -36,7 +36,7 @@ opencode authenticates against the key broker at
 
 ## Components
 
-- llama-server (host): serves Qwen3.8-27B; see
+- llama-server (host): serves Qwen3-4B (Qwen3.8-27B in production); see
   [docs/model-and-context.md](docs/model-and-context.md).
 - keycloak (Docker, 26.6, dev mode): identity provider, realm
   `playground`, users `alice` and `bob`.
