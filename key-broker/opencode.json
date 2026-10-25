@@ -17,7 +17,7 @@
           "apiKey": "{env:LITELLM_API_KEY}"
         },
         "models": {
-          "medium": { "limit": { "context": 32768, "output": 8192 } }
+          "medium": { "limit": { "context": 65536, "output": 8192 } }
         }
       }
     }

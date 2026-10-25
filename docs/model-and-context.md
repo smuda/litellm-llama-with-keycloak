@@ -1,14 +1,14 @@
 # Playground model and context choice
 
-The playground serves Qwen3-4B as `ggml-org/Qwen3-4B-GGUF:Q4_K_M`
-with a 32k context and one slot. Production serves Qwen3.8-27B.
+The playground serves Qwen3.8-27B as `ggml-org/Qwen3-4B-GGUF:Q4_K_M`
+with a 64k context and one slot. Production serves Qwen3.8-27B.
 opencode reaches either under the LiteLLM model name `medium`.
 
 | Setting           | 32 GB Mac (playground) | 512 GB machine (production) |
 | ----------------- | ---------------------- | --------------------------- |
-| Model             | Qwen3-4B               | Qwen3.8-27B                 |
-| Quantisation      | Q4_K_M (2.5 GB)        | Q8_0                        |
-| Context (`-c`)    | 32768 (model native)   | 262144 (model maximum)      |
+| Model             | Qwen3.8-27B            | Qwen3.8-27B                 |
+| Quantisation      | Q4_K_M                 | Q8_0                        |
+| Context (`-c`)    | 65536 (model native)   | 262144 (model maximum)      |
 | Slots (`-np`)     | 1                      | to decide                   |
 | Metal wired limit | default is enough      | default is enough           |
 | LiteLLM name      | `medium`               | `medium`                    |
@@ -16,19 +16,6 @@ opencode reaches either under the LiteLLM model name `medium`.
 The playground exists to test the auth path: Keycloak login, the
 virtual key, LiteLLM and spend. Any model that answers and makes tool
 calls is enough for that.
-
-## Why not the 27B on the playground
-
-Tried on the 32 GB base M4 with Docker running:
-
-- Qwen3.8-27B Q4_K_M at `-c 65536` loads and serves, but pushes
-  other apps into swap (free RAM 5-7%) and generates about 2 tokens/s.
-  A coding session is unusable.
-- Qwen3-30B-A3B Q4_K_M is 18.6 GB, the same memory squeeze; prompt
-  processing stalled for 35 s and more per 2048-token chunk.
-- Prompt processing on the base M4 GPU is about 150 tokens/s even for
-  the 4B, so opencode's 9-28k token prompts take a minute or more on
-  the first turn. Later turns hit the prompt cache.
 
 ## Model and name
 
@@ -96,7 +83,7 @@ Playground (32 GB Mac):
 
 ```sh
 llama-server -hf ggml-org/Qwen3-4B-GGUF:Q4_K_M --alias qwen3.8-27b \
-  -c 32768 -np 1 --host 127.0.0.1 --port 9931
+  -c 65536 -np 1 --host 127.0.0.1 --port 9931
 ```
 
 With Homebrew llama.cpp 0.6.0 (build 11429), `-hf` fails with
@@ -108,7 +95,7 @@ curl reaches huggingface.co. Download the file with curl into
 curl -L -C - -o ~/Library/Caches/llama.cpp/ggml-org_Qwen3-4B-GGUF_Qwen3-4B-Q4_K_M.gguf \
   https://huggingface.co/ggml-org/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf
 llama-server -m ~/Library/Caches/llama.cpp/ggml-org_Qwen3-4B-GGUF_Qwen3-4B-Q4_K_M.gguf \
-  --alias qwen3.8-27b -c 32768 -np 1 --host 127.0.0.1 --port 9931
+  --alias qwen3.8-27b -c 65536 -np 1 --host 127.0.0.1 --port 9931
 ```
 
 Production (512 GB machine):
