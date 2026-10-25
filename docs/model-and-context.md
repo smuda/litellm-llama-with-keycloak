@@ -135,7 +135,7 @@ On the playground:
 - [x] opencode handles streamed tool-call deltas through LiteLLM.
 - [x] llama-server returns thinking as `reasoning_content`, separate
       from `content`.
-- [ ] opencode shows `reasoning_content` as reasoning, not as raw text
+- [x] opencode shows `reasoning_content` as reasoning, not as raw text
       in the answer.
 - [x] A `127.0.0.1` bind on the host is reachable from Docker Desktop
       via `host.docker.internal`.
