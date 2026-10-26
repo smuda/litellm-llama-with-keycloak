@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,7 +22,8 @@ func main() {
 	env := func(k string) string {
 		v := os.Getenv(k)
 		if v == "" {
-			log.Fatalf("missing env %s", k)
+			slog.Error("missing env", "key", k)
+			os.Exit(1)
 		}
 		return v
 	}
@@ -38,7 +39,8 @@ func main() {
 		time.Sleep(2 * time.Second)
 	}
 	if err != nil {
-		log.Fatalf("oidc discovery: %v", err)
+		slog.Error("oidc discovery failed", "error", err)
+		os.Exit(1)
 	}
 	b := &broker{
 		st: newStore(),
@@ -64,7 +66,8 @@ func main() {
 	mux.HandleFunc("GET /callback", b.handleCallback)
 	mux.HandleFunc("POST /redeem", b.handleRedeem)
 	mux.HandleFunc("GET /remote-config", b.handleRemoteConfig)
-	log.Fatal(http.ListenAndServe(":8090", mux))
+	slog.Info("Starting server on :8090")
+	http.ListenAndServe(":8090", mux)
 }
 
 func (b *broker) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -90,14 +93,14 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	tok, err := b.oauth.Exchange(r.Context(), r.URL.Query().Get("code"))
 	if err != nil {
-		log.Printf("code exchange failed: %v", err)
+		slog.Error("code exchange failed", "error", err)
 		http.Error(w, "login failed", http.StatusBadGateway)
 		return
 	}
 	raw, _ := tok.Extra("id_token").(string)
 	idt, err := b.verifier.Verify(r.Context(), raw)
 	if err != nil {
-		log.Printf("id token verify failed: %v", err)
+		slog.Error("id token verify failed", "error", err)
 		http.Error(w, "login failed", http.StatusBadGateway)
 		return
 	}

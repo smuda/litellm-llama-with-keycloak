@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -86,7 +86,7 @@ func (b *broker) handleRedeem(w http.ResponseWriter, r *http.Request) {
 	}
 	key, err := b.mintKey(r.Context(), c.user, c.email)
 	if err != nil {
-		log.Printf("mint key for %s failed: %v", c.user, err)
+		slog.Error("mint key for user failed", "user", c.user, "error", err)
 		http.Error(w, "could not mint key", http.StatusBadGateway)
 		return
 	}

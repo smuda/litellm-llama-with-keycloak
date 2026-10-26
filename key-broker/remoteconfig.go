@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -49,7 +49,7 @@ func (b *broker) handleRemoteConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		// err embeds the request path, which carries the key.
-		log.Printf("remote-config: key lookup failed")
+		slog.Error("remote-config: key lookup failed")
 		http.Error(w, "litellm unavailable", http.StatusBadGateway)
 		return
 	}
