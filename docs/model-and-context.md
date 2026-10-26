@@ -1,21 +1,27 @@
 # Playground model and context choice
 
-The playground serves Qwen3.8-27B as `ggml-org/Qwen3-4B-GGUF:Q4_K_M`
-with a 64k context and one slot. Production serves Qwen3.8-27B.
+The playground serves Qwen3-Coder-30B-A3B-Instruct as
+`unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:Q4_K_M` with a 32k context
+and one slot. Production serves Qwen3.8-27B.
 opencode reaches either under the LiteLLM model name `medium`.
 
 | Setting           | 32 GB Mac (playground) | 512 GB machine (production) |
 | ----------------- | ---------------------- | --------------------------- |
-| Model             | Qwen3.8-27B            | Qwen3.8-27B                 |
+| Model             | Qwen3-Coder-30B-A3B    | Qwen3.8-27B                 |
 | Quantisation      | Q4_K_M                 | Q8_0                        |
-| Context (`-c`)    | 65536 (model native)   | 262144 (model maximum)      |
+| Context (`-c`)    | 32768                  | 262144 (model maximum)      |
 | Slots (`-np`)     | 1                      | to decide                   |
 | Metal wired limit | default is enough      | default is enough           |
 | LiteLLM name      | `medium`               | `medium`                    |
 
 The playground exists to test the auth path: Keycloak login, the
 virtual key, LiteLLM and spend. Any model that answers and makes tool
-calls is enough for that.
+calls is enough for that. Qwen3-Coder-30B-A3B is chosen so the
+playground can also take simple coding tasks: it is a
+mixture-of-experts model with about 3B active parameters, so it runs
+fast on the Mac, and it is tuned for agentic tool use. The general
+Qwen3-30B-A3B gave up on a multi-step edit and told the user what to
+do instead.
 
 ## Model and name
 
@@ -35,8 +41,9 @@ playground the alias does not name the model it serves.
 - llama.cpp supports its `qwen35` architecture, and its Qwen3-Coder
   XML tool-call parser matches the chat template, so opencode tool
   calls work.
-- Thinking is on by default on both models and returns as
+- Thinking is on by default on Qwen3.8-27B and returns as
   `reasoning_content`. `--reasoning off` disables it.
+  Qwen3-Coder-30B-A3B-Instruct does not think.
 
 ## Quantisation
 
@@ -67,8 +74,9 @@ against.
   title, retries) overflowed 32k and failed with "Context size has
   been exceeded". `-np 1` gives one request the whole context and
   queues the rest.
-- `limit.context` in the served `key-broker/opencode.json` must match
-  `-c`, or opencode does not compact before the server refuses.
+- `limit.context` in the served opencode config must match `-c`, or
+  opencode does not compact before the server refuses. The Makefile
+  targets read `-c` from it.
 - opencode's system prompt and tool definitions use roughly 10-15k
   tokens before the first message, so 32k is tight but enough to test
   the auth path.
@@ -79,30 +87,39 @@ against.
 
 ## Commands and config
 
-Playground (32 GB Mac):
+The Makefile starts llama-server with the flags for each machine.
+It takes `-c` from `limit.context` in the opencode config the broker
+serves, so the two cannot drift. Change the context there, not on the
+command line.
+
+Playground (32 GB Mac), reading `key-broker/opencode.json`:
 
 ```sh
-llama-server -hf ggml-org/Qwen3-4B-GGUF:Q4_K_M --alias qwen3.8-27b \
-  -c 65536 -np 1 --host 127.0.0.1 --port 9931
+curl -L -C - -o ~/Library/Caches/llama.cpp/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf \
+  https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/resolve/main/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+make llama-playground
 ```
 
 With Homebrew llama.cpp 0.6.0 (build 11429), `-hf` fails with
 `get_repo_commit: HTTPLIB failed: SSL connection failed` even though
-curl reaches huggingface.co. Download the file with curl into
-`~/Library/Caches/llama.cpp/` and pass it with `-m` instead:
+curl reaches huggingface.co, so the playground target loads the file
+downloaded above with `-m`.
+
+The sampling flags are Qwen's recommended settings for Qwen3-Coder.
+The model's native context is 256k, so it needs no YaRN flags.
+
+At `-c 65536` with the default f16 KV cache, llama-server wired about
+28.9 GB of the 32 GB Mac. With Docker running, the rest went to swap,
+prompt processing fell from 385 to about 30 tokens/s, and opencode
+dropped requests after about 6 minutes without a response. A q8_0 KV
+cache at `-c 32768` wires about 24.2 GB and keeps memory pressure
+green.
+
+Production (512 GB machine), reading
+`key-broker/opencode.production.json`:
 
 ```sh
-curl -L -C - -o ~/Library/Caches/llama.cpp/ggml-org_Qwen3-4B-GGUF_Qwen3-4B-Q4_K_M.gguf \
-  https://huggingface.co/ggml-org/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf
-llama-server -m ~/Library/Caches/llama.cpp/ggml-org_Qwen3-4B-GGUF_Qwen3-4B-Q4_K_M.gguf \
-  --alias qwen3.8-27b -c 65536 -np 1 --host 127.0.0.1 --port 9931
-```
-
-Production (512 GB machine):
-
-```sh
-llama-server -hf ggml-org/Qwen3.8-27B-GGUF:Q8_0 --alias qwen3.8-27b \
-  -c 262144 --host 127.0.0.1 --port 9931
+make llama-production
 ```
 
 LiteLLM `model_list`, the same on both machines:

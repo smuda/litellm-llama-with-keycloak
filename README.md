@@ -36,7 +36,8 @@ opencode authenticates against the key broker at
 
 ## Components
 
-- llama-server (host): serves Qwen3-4B (Qwen3.8-27B in production); see
+- llama-server (host): serves Qwen3-Coder-30B-A3B (Qwen3.8-27B in
+  production); see
   [docs/model-and-context.md](docs/model-and-context.md).
 - keycloak (Docker, 26.6, dev mode): identity provider, realm
   `playground`, users `alice` and `bob`.
@@ -59,8 +60,8 @@ LiteLLM and the key broker stay on the compose network.
 Full step-by-step instructions with the PATH gotcha are in
 [docs/local-testing.md](docs/local-testing.md). In short:
 
-1. Start llama-server on the host (port 9931). Model, quantisation,
-   and context size are covered in
+1. Start llama-server on the host with `make llama-playground`
+   (port 9931). Model, quantisation, and context size are covered in
    [docs/model-and-context.md](docs/model-and-context.md).
 2. `cp .env.example .env` and replace every `change-me`.
 3. `docker compose up --build -d`
