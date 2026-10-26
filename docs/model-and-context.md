@@ -1,15 +1,15 @@
 # Playground model and context choice
 
 The playground serves Qwen3-Coder-30B-A3B-Instruct as
-`unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:Q4_K_M` with a 32k context
+`unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:IQ4_XS` with a 64k context
 and one slot. Production serves Qwen3.8-27B.
 opencode reaches either under the LiteLLM model name `medium`.
 
 | Setting           | 32 GB Mac (playground) | 512 GB machine (production) |
 | ----------------- | ---------------------- | --------------------------- |
 | Model             | Qwen3-Coder-30B-A3B    | Qwen3.8-27B                 |
-| Quantisation      | Q4_K_M                 | Q8_0                        |
-| Context (`-c`)    | 32768                  | 262144 (model maximum)      |
+| Quantisation      | IQ4_XS                 | Q8_0                        |
+| Context (`-c`)    | 65536                  | 262144 (model maximum)      |
 | Slots (`-np`)     | 1                      | to decide                   |
 | Metal wired limit | default is enough      | default is enough           |
 | LiteLLM name      | `medium`               | `medium`                    |
@@ -95,15 +95,14 @@ command line.
 Playground (32 GB Mac), reading `key-broker/opencode.json`:
 
 ```sh
-curl -L -C - -o ~/Library/Caches/llama.cpp/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf \
-  https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/resolve/main/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
 make llama-playground
 ```
 
-With Homebrew llama.cpp 0.6.0 (build 11429), `-hf` fails with
-`get_repo_commit: HTTPLIB failed: SSL connection failed` even though
-curl reaches huggingface.co, so the playground target loads the file
-downloaded above with `-m`.
+The first run downloads the model into `~/.cache/huggingface/hub/`.
+Homebrew llama.cpp 0.6.0 (build 11429) once failed here with
+`get_repo_commit: HTTPLIB failed: SSL connection failed`, but the same
+build later downloaded Qwen3-Coder with `-hf`. If it fails, download
+the file with curl and pass it with `-m` instead.
 
 The sampling flags are Qwen's recommended settings for Qwen3-Coder.
 The model's native context is 256k, so it needs no YaRN flags.
@@ -113,7 +112,9 @@ At `-c 65536` with the default f16 KV cache, llama-server wired about
 prompt processing fell from 385 to about 30 tokens/s, and opencode
 dropped requests after about 6 minutes without a response. A q8_0 KV
 cache at `-c 32768` wires about 24.2 GB and keeps memory pressure
-green.
+green, but opencode then compacts after every few steps and loses its
+place. IQ4_XS weights are about 2.2 GB smaller than Q4_K_M, which pays
+for a 64k q8_0 KV cache.
 
 Production (512 GB machine), reading
 `key-broker/opencode.production.json`:

@@ -18,7 +18,7 @@ LLAMA = llama-server --alias qwen3.8-27b --host 127.0.0.1 --port 9931
 llama-playground:
 	ctx=$$($(CTX) key-broker/opencode.json) && \
 	$(LLAMA) -c $$ctx -np 1 -fa on -ctk q8_0 -ctv q8_0 \
-	  -m ~/Library/Caches/llama.cpp/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf \
+	  -hf unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:IQ4_XS \
 	  --temp 0.7 --top-p 0.8 --top-k 20 --repeat-penalty 1.05
 
 llama-production:
