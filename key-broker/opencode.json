@@ -8,6 +8,7 @@
     "headers": { "Authorization": "Bearer {env:LITELLM_API_KEY}" }
   },
   "config": {
+    "instructions": ["http://localhost:4000/opencode/rules.md"],
     "model": "litellm/medium",
     "provider": {
       "litellm": {

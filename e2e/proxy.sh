@@ -76,6 +76,10 @@ big_body_not_413() {
   [ "$code" != 413 ] && [ "$code" != 000 ]
 }
 
+rules_served() {
+  curl -sSf "$BASE/opencode/rules.md" | cmp -s - key-broker/rules.md
+}
+
 nginx_t_playground() { docker compose exec -T nginx nginx -t; }
 
 nginx_t_production() {
@@ -97,6 +101,7 @@ check "/metrics traversal paths don't reach metrics" metrics_no_traversal
 check "/broker redirect keeps the port" broker_redirect_keeps_port
 check "/broker/login redirects with /broker/callback" login_redirect
 check "2 MB request body is not 413" big_body_not_413
+check "/opencode/rules.md is served" rules_served
 check "nginx -t playground" nginx_t_playground
 check "nginx -t production" nginx_t_production
 check "production override has no keycloak" prod_has_no_keycloak
