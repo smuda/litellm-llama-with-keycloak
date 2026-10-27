@@ -16,3 +16,8 @@ ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root.
 See `docs/agents/domain.md`.
+
+### Tooling tests
+
+Tooling self-tests (Makefile targets, hooks) live in
+`scripts/*-test.sh` and run from `make test`.
