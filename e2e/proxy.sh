@@ -13,6 +13,10 @@ export GROUPS_CLAIM=${GROUPS_CLAIM:-key_broker_groups}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
+# A missing required variable fails every compose call; stop here with
+# compose's own error, which names it, instead of a wall of FAILs.
+docker compose $PROD config -q || { echo "compose config failed; check .env" >&2; exit 2; }
+
 envval() { grep -E "^$1=" .env | head -n1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\$//"; }
 KEY=$(envval LITELLM_MASTER_KEY || true)
 [ -n "$KEY" ] || { echo "LITELLM_MASTER_KEY not found in .env" >&2; exit 2; }
@@ -163,6 +167,19 @@ prod_has_no_keycloak() {
   ! docker compose $PROD config --services | grep -qx keycloak
 }
 
+# Dropping any one variable from .env.example must fail compose config
+# and name it, rather than defaulting to a blank string.
+required_vars_fail_when_unset() {
+  local v vars
+  vars=$(grep -oE '^[A-Z_]+=' .env.example | tr -d =)
+  [ -n "$vars" ] || return 1
+  for v in $vars; do
+    grep -v "^$v=" .env.example >"$tmp/env.missing"
+    ! env -u "$v" docker compose $PROD --env-file "$tmp/env.missing" config -q 2>"$tmp/env.err" &&
+      grep -qw "$v" "$tmp/env.err" || return 1
+  done
+}
+
 # Keycloak takes about a minute to start, and the login checks need it.
 deadline=$((SECONDS + 180))
 until curl -fs -m 5 -o /dev/null "$REALM"; do
@@ -186,5 +203,6 @@ check "viewer key cannot mint keys but can list models" viewer_key_cannot_mint
 check "nginx -t playground" nginx_t_playground
 check "nginx -t production" nginx_t_production
 check "production override has no keycloak" prod_has_no_keycloak
+check "each required variable fails compose config when unset" required_vars_fail_when_unset
 
 [ "$fails" -eq 0 ] || { echo "$fails check(s) failed" >&2; exit 1; }
