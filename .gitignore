@@ -1,3 +1,4 @@
 .env
 /key-broker/bin/
+/key-broker/key-broker
 /login-helper/bin/
