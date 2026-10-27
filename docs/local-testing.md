@@ -59,10 +59,11 @@ from `.env`. The tab then says it can be closed, and opencode stores
 the virtual key.
 
 An existing Keycloak database keeps the old redirect URI, because
-`--import-realm` skips a realm that already exists. Update the
-`key-broker` client's redirect URI to
-`http://localhost:4000/broker/callback` in the admin console, or run
-`docker compose down -v` to start from a fresh database.
+`--import-realm` skips a realm that already exists. Run
+`make realm-reset` to recreate the `playground` realm from
+`keycloak/realm-playground.json`. LiteLLM keys survive; Keycloak
+sessions do not. `docker compose down -v` also works, but wipes every
+database, including all issued keys.
 
 ## Log in as another user
 

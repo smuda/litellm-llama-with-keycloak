@@ -3,7 +3,7 @@ SHELL := bash -euo pipefail
 
 MODULES := key-broker login-helper
 
-.PHONY: build lint lint-md test hooks e2e llama-playground llama-production $(MODULES)
+.PHONY: build lint lint-md test hooks e2e realm-reset llama-playground llama-production $(MODULES)
 
 build: $(MODULES)
 
@@ -35,7 +35,19 @@ hooks:
 
 e2e:
 	docker compose -f docker-compose.yml up --build -d --wait
+	$(MAKE) realm-reset
 	./e2e/proxy.sh
+
+# --import-realm on startup skips a realm that already exists, so edits
+# to the realm JSON need this. A one-off container of the same service
+# resolves the ${...} placeholders from the same env. Sessions are lost.
+REALM_FILE = /opt/keycloak/data/import/realm-playground.json
+
+realm-reset:
+	docker compose -f docker-compose.yml stop keycloak
+	docker compose -f docker-compose.yml run --rm --no-deps keycloak \
+	  import --file $(REALM_FILE) --override true
+	docker compose -f docker-compose.yml start keycloak
 
 # -c comes from limit.context in the opencode config the broker serves,
 # so opencode compacts before llama-server refuses the request.

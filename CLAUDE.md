@@ -22,6 +22,12 @@ See `docs/agents/domain.md`.
 Tooling self-tests (Makefile targets, hooks) live in
 `scripts/*-test.sh` and run from `make test`.
 
+### Playground realm
+
+Editing `keycloak/realm-playground.json` does not update an existing
+realm. Run `make realm-reset`; `make e2e` does it before the e2e
+script.
+
 ### Served config
 
 `key-broker/config/opencode.json` is served to every opencode client.
