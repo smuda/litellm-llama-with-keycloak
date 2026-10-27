@@ -23,7 +23,8 @@ lint-md:
 	  perl -CSD -ne \
 	  '$$hdr = 1 if /^diff /; $$hdr = 0 if /^@@/; s/\r?\n\z//; \
 	   $$file = $$1 if $$hdr && m{^\+\+\+ b/(.*?)\t?$$}; next if $$hdr || !s/^\+//; \
-	   if (length > 72) { print "$$file: $$_\n"; $$bad = 1 } \
+	   if (length > 72 && !/^\|/ && \
+	       !m{^\s*(\[[^\]]+\]:\s*)?(<https?://[^\s<>]+>|https?://\S+)$$}) { print "$$file: $$_\n"; $$bad = 1 } \
 	   END { exit $$bad }'
 
 test:

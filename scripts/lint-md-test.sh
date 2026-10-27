@@ -24,6 +24,16 @@ check "72 non-ascii" pass "$(rep ö 72)"
 check "73 non-ascii" fail "$(rep ö 73)"
 check "72 ascii crlf" pass "$(rep a 72)"$'\r'
 check "leading plus" fail "++ $(rep a 71)"
+check "long table row" pass "| $(rep a 80) |"
+check "pipe not first" fail " | $(rep a 80) |"
+check "bare url" pass "https://example.com/$(rep a 80)"
+check "indented bare url" pass "  https://example.com/$(rep a 80)"
+check "angle url" pass "<https://example.com/$(rep a 80)>"
+check "ref definition" pass "[label]: https://example.com/$(rep a 80)"
+check "angle ref definition" pass "[label]: <https://example.com/$(rep a 80)>"
+check "prose with url" fail "see https://example.com/$(rep a 80)"
+check "url then prose" fail "https://example.com/$(rep a 80) more"
+check "ref then title" fail "[label]: https://example.com/$(rep a 80) \"t\""
 
 git rm -rqf --cached . >/dev/null
 make -s -f "$mk" lint-md || { echo "FAIL empty index"; fail=1; }
