@@ -5,7 +5,10 @@
 ### Issue tracker
 
 Issues live in GitHub Issues for smuda/litellm-llama-with-keycloak
-(`gh` CLI). See `docs/agents/issue-tracker.md`.
+(`gh` CLI). Read an issue with
+`gh issue view <n> --json title,body,labels,comments`: `--comments`
+alone hides the body, and it cannot be combined with `--json`. Other
+operations: `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
