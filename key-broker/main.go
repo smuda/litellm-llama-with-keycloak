@@ -32,6 +32,7 @@ func main() {
 		slog.Error("ACCESS_GROUPS has no groups")
 		os.Exit(1)
 	}
+	groupsClaim := env("GROUPS_CLAIM")
 	// The issuer is the browser-facing URL; discovery goes over the compose network.
 	ctx := oidc.InsecureIssuerURLContext(context.Background(), env("OIDC_ISSUER"))
 	var provider *oidc.Provider
@@ -62,6 +63,7 @@ func main() {
 		wellknown:    env("WELLKNOWN_PATH"),
 		client:       &http.Client{Timeout: 15 * time.Second},
 		accessGroups: accessGroups,
+		groupsClaim:  groupsClaim,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/opencode", func(w http.ResponseWriter, r *http.Request) {
@@ -114,17 +116,23 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var claims struct {
-		Username string   `json:"preferred_username"`
-		Email    string   `json:"email"`
-		Groups   []string `json:"groups"`
+		Username string `json:"preferred_username"`
+		Email    string `json:"email"`
 	}
 	if err := idt.Claims(&claims); err != nil || claims.Username == "" {
 		http.Error(w, "missing claims", http.StatusBadGateway)
 		return
 	}
-	granted := accessGroupsOf(claims.Groups, b.accessGroups)
+	// The claim name is configured, so it can't be a struct tag. Any
+	// malformed value means no groups, which ends in the 403 below.
+	var groups []string
+	var all map[string]json.RawMessage
+	if err := idt.Claims(&all); err != nil || json.Unmarshal(all[b.groupsClaim], &groups) != nil {
+		groups = nil
+	}
+	granted := accessGroupsOf(groups, b.accessGroups)
 	if len(granted) == 0 {
-		slog.Warn("not in an access group", "user", claims.Username, "groups", claims.Groups, "access_groups", b.accessGroups)
+		slog.Warn("not in an access group", "user", claims.Username, "groups", groups, "access_groups", b.accessGroups)
 		http.Error(w, "You are not in an access group for this service. Contact your administrator.", http.StatusForbidden)
 		return
 	}

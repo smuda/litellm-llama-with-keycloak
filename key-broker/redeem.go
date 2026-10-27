@@ -69,6 +69,7 @@ type broker struct {
 	wellknown    string
 	client       *http.Client
 	accessGroups []string
+	groupsClaim  string
 }
 
 func (b *broker) handleRedeem(w http.ResponseWriter, r *http.Request) {

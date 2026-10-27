@@ -66,6 +66,7 @@ services:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       WELLKNOWN_PATH: /config/opencode.json
       ACCESS_GROUPS: /llm-users
+      GROUPS_CLAIM: key_broker_groups
     volumes:
       - ./key-broker/opencode.json:/config/opencode.json:ro
     depends_on:

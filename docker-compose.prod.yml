@@ -23,5 +23,7 @@ services:
       OIDC_DISCOVERY_URL: https://keycloak.example.internal/realms/playground
       # LDAP-synced group paths, comma-separated full paths, from .env.
       ACCESS_GROUPS: ${ACCESS_GROUPS:?set ACCESS_GROUPS in .env}
+      # Claim name of the key-broker client's Group Membership mapper.
+      GROUPS_CLAIM: ${GROUPS_CLAIM:?set GROUPS_CLAIM in .env}
     volumes:
       - ./key-broker/opencode.production.json:/config/opencode.json:ro

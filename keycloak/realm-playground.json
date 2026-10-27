@@ -18,7 +18,7 @@
       "redirectUris": ["http://localhost:4000/broker/callback"],
       "protocolMappers": [
         {
-          "name": "groups",
+          "name": "key_broker_groups",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-group-membership-mapper",
           "config": {
@@ -27,7 +27,7 @@
             "access.token.claim": "false",
             "userinfo.token.claim": "false",
             "introspection.token.claim": "false",
-            "claim.name": "groups"
+            "claim.name": "key_broker_groups"
           }
         }
       ]

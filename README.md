@@ -117,8 +117,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - Register `https://<host>/broker/callback` as a redirect URI in the
   production Keycloak.
 - Add a Group Membership mapper to the production `key-broker`
-  client: claim name `groups`, full group path on, added to the ID
-  token only.
+  client: full group path on, added to the ID token only.
+- Set `GROUPS_CLAIM` in `.env` to that mapper's claim name. Pick a
+  name no other mapper or client scope writes; not `groups`, which
+  the default `microprofile-jwt` scope also writes. The broker
+  refuses to start without it.
 - Set `ACCESS_GROUPS` in `.env` to the full paths of the LDAP-synced
   access groups, comma-separated. The broker refuses to start without
   it.
