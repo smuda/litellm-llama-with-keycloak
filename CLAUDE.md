@@ -21,3 +21,8 @@ See `docs/agents/domain.md`.
 
 Tooling self-tests (Makefile targets, hooks) live in
 `scripts/*-test.sh` and run from `make test`.
+
+### Served config
+
+`key-broker/config/opencode.json` is served to every opencode client.
+Do not change it unless asked.
