@@ -48,6 +48,11 @@ realm-reset:
 	docker compose -f docker-compose.yml run --rm --no-deps keycloak \
 	  import --file $(REALM_FILE) --override true
 	docker compose -f docker-compose.yml start keycloak
+	@deadline=$$((SECONDS + 180)); \
+	until curl -fs -m 5 -o /dev/null http://localhost:8080/realms/playground; do \
+	  [ $$SECONDS -lt $$deadline ] || { echo "Keycloak playground realm not ready after 180s" >&2; exit 1; }; \
+	  sleep 2; \
+	done
 
 # -c comes from limit.context in the opencode config the broker serves,
 # so opencode compacts before llama-server refuses the request.
