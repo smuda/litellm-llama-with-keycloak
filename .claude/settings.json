@@ -12,6 +12,11 @@
   "sandbox": {
     "network": {
       "allowLocalBinding": true
+    },
+    "filesystem": {
+      "allowWrite": [
+        "~/.docker/buildx"
+      ]
     }
   }
 }
