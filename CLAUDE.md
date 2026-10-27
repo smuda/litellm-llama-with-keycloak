@@ -35,3 +35,22 @@ script.
 
 `key-broker/config/opencode.json` is served to every opencode client.
 Do not change it unless asked.
+
+### Live state
+
+Read live playground Keycloak or LiteLLM state with psql on the
+compose `postgres` service, with the session defaulting to
+read-only so an accidental write fails:
+
+```sh
+docker compose exec -T \
+  -e PGOPTIONS='-c default_transaction_read_only=on' \
+  postgres psql -U postgres -d keycloak   # or -d litellm
+```
+
+This needs no LiteLLM master key; keep that key out of inspection.
+A read-only error means stop and report; the superuser could lift
+the setting, so leaving it on is the agent's job. Select only the
+columns you need: Keycloak keeps client secrets, realm keys and
+password hashes in plain columns, and query output leaves the
+machine.
