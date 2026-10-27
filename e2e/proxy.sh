@@ -82,6 +82,28 @@ rules_served() {
   curl -sSf "$BASE/opencode/rules.md" | cmp -s - key-broker/rules.md
 }
 
+# A key minted for an internal_user_viewer must not be able to mint more keys.
+viewer_key_cannot_mint() {
+  local uid=e2e-viewer-$$ vkey="" rc=0 code
+  (
+    auth -sS -f -o /dev/null -X POST -H 'Content-Type: application/json' \
+      -d "{\"user_id\":\"$uid\",\"auto_create_key\":false,\"user_role\":\"internal_user_viewer\"}" "$BASE/user/new" || exit 1
+    vkey=$(auth -sS -f -X POST -H 'Content-Type: application/json' \
+      -d "{\"user_id\":\"$uid\",\"duration\":\"5m\"}" "$BASE/key/generate" | jq -er .key) || exit 1
+    vauth() { printf 'header = "Authorization: Bearer %s"\n' "$vkey" | curl -K - "$@"; }
+    code=$(vauth -sS -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+      -d "{\"user_id\":\"$uid\"}" "$BASE/key/generate")
+    [ "$code" = 401 ] || [ "$code" = 403 ] || exit 1
+    [ "$(vauth -sS -o /dev/null -w '%{http_code}' "$BASE/v1/models")" = 200 ] || exit 1
+  ) || rc=1
+  # The subshell's vkey is gone; look the key up by user to delete it.
+  local keys
+  keys=$(auth -sS "$BASE/user/info?user_id=$uid" | jq -c '[.keys[]?.token]' 2>/dev/null || echo '[]')
+  auth -sS -o /dev/null -X POST -H 'Content-Type: application/json' -d "{\"keys\":$keys}" "$BASE/key/delete" || true
+  auth -sS -o /dev/null -X POST -H 'Content-Type: application/json' -d "{\"user_ids\":[\"$uid\"]}" "$BASE/user/delete" || true
+  return $rc
+}
+
 nginx_t_playground() { docker compose exec -T nginx nginx -t; }
 
 nginx_t_production() {
@@ -104,6 +126,7 @@ check "/broker redirect keeps the port" broker_redirect_keeps_port
 check "/broker/login redirects with /broker/callback" login_redirect
 check "2 MB request body is not 413" big_body_not_413
 check "/opencode/rules.md is served" rules_served
+check "viewer key cannot mint keys but can list models" viewer_key_cannot_mint
 check "nginx -t playground" nginx_t_playground
 check "nginx -t production" nginx_t_production
 check "production override has no keycloak" prod_has_no_keycloak

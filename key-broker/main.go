@@ -135,9 +135,39 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("http://127.0.0.1:%s/done?code=%s", p.port, url.QueryEscape(code)), http.StatusFound)
 }
 
+// keyHolderRole can call the proxy but not manage keys.
+const keyHolderRole = "internal_user_viewer"
+
 func (b *broker) mintKey(ctx context.Context, user, email string) (string, error) {
 	// LiteLLM answers 409 when the user exists, which a second login hits.
-	if _, err := b.litellm(ctx, "POST", "/user/new", map[string]any{"user_id": user, "user_email": email, "auto_create_key": false}); err != nil && !errors.Is(err, errConflict) {
+	_, err := b.litellm(ctx, "POST", "/user/new", map[string]any{"user_id": user, "user_email": email, "auto_create_key": false, "user_role": keyHolderRole})
+	if errors.Is(err, errConflict) {
+		// Users created before the role was set have NULL, which LiteLLM treats
+		// as internal_user: able to mint keys itself and bypass the group gate.
+		info, err := b.litellm(ctx, "GET", "/user/info?user_id="+url.QueryEscape(user), nil)
+		if err != nil {
+			return "", err
+		}
+		var u struct {
+			UserID   string `json:"user_id"`
+			UserInfo struct {
+				UserRole *string `json:"user_role"`
+			} `json:"user_info"`
+		}
+		if err := json.Unmarshal(info, &u); err != nil {
+			return "", fmt.Errorf("parse /user/info: %w", err)
+		}
+		// LiteLLM can resolve the query to another user (a space, an invalid
+		// id falling back to the admin); trusting that role would skip the fix.
+		if u.UserID != user {
+			return "", fmt.Errorf("/user/info answered for %q, not %q", u.UserID, user)
+		}
+		if r := u.UserInfo.UserRole; r == nil || *r == "" || *r == "internal_user" {
+			if _, err := b.litellm(ctx, "POST", "/user/update", map[string]any{"user_id": user, "user_role": keyHolderRole}); err != nil {
+				return "", err
+			}
+		}
+	} else if err != nil {
 		return "", err
 	}
 	out, err := b.litellm(ctx, "POST", "/key/generate", map[string]string{"user_id": user, "duration": "14d"})
