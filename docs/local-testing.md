@@ -63,3 +63,15 @@ An existing Keycloak database keeps the old redirect URI, because
 `key-broker` client's redirect URI to
 `http://localhost:4000/broker/callback` in the admin console, or run
 `docker compose down -v` to start from a fresh database.
+
+## Log in as another user
+
+Keycloak keeps the browser session, so the next login signs in as the
+same user without asking. Log out first by opening
+http://localhost:8080/realms/playground/protocol/openid-connect/logout
+and confirming, then run `opencode auth login` again. A private window
+works too.
+
+Log in as `eve` to see the access group gate refuse: the browser shows
+a 403, and `docker compose logs key-broker` shows her groups. Stop the
+waiting `opencode auth login` with Ctrl-C.
