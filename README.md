@@ -17,7 +17,8 @@ opencode authenticates against the key broker at
    `127.0.0.1`, and opens the browser at
    `/login?port=...&challenge=...`.
 3. The key broker starts an OIDC authorization code flow with
-   Keycloak (realm `playground`). The user logs in as `alice` or `bob`.
+   Keycloak (realm `playground`). The user logs in as `alice` or `bob`;
+   `eve` is refused because she is in no access group.
 4. Keycloak redirects back to the key broker's `/callback`. It
    exchanges the code, verifies the id token, creates the LiteLLM
    user if it does not exist, and mints a 14 day virtual key.
@@ -78,8 +79,9 @@ Full step-by-step instructions with the PATH gotcha are in
 - `login-helper/` — Go program opencode runs on the developer's
   machine.
 - `litellm/config.yaml` — LiteLLM `model_list` and settings.
-- `keycloak/realm-playground.json` — realm, `alice`, `bob`, and the
-  `key-broker` confidential client.
+- `keycloak/realm-playground.json` — realm, `alice`, `bob`, `eve`
+  (in no access group), the groups, and the `key-broker`
+  confidential client.
 - `nginx/` — nginx config: shared locations, playground and
   production servers, `/metrics` access rules.
 - `postgres/initdb.sh` — creates the two databases.
@@ -114,6 +116,12 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
   `tls.key` and point `TLS_DIR` at it.
 - Register `https://<host>/broker/callback` as a redirect URI in the
   production Keycloak.
+- Add a Group Membership mapper to the production `key-broker`
+  client: claim name `groups`, full group path on, added to the ID
+  token only.
+- Set `ACCESS_GROUPS` in `.env` to the full paths of the LDAP-synced
+  access groups, comma-separated. The broker refuses to start without
+  it.
 - Set `NODE_USE_SYSTEM_CA=1` so opencode trusts the internal CA. Not
   yet verified against a real host.
 
@@ -141,3 +149,5 @@ config.
   helper gives up mid-redeem (its 30 s timeout or Ctrl-C) after
   LiteLLM has created the key, nobody receives that key and it stays
   valid until it expires.
+- A user removed from every access group keeps any existing key
+  until it expires (up to 14 days).

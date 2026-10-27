@@ -61,13 +61,14 @@ func take[V any](s *store, m map[string]entry[V], k string) (V, bool) {
 }
 
 type broker struct {
-	st         *store
-	oauth      *oauth2.Config
-	verifier   *oidc.IDTokenVerifier
-	litellmURL string
-	masterKey  string
-	wellknown  string
-	client     *http.Client
+	st           *store
+	oauth        *oauth2.Config
+	verifier     *oidc.IDTokenVerifier
+	litellmURL   string
+	masterKey    string
+	wellknown    string
+	client       *http.Client
+	accessGroups []string
 }
 
 func (b *broker) handleRedeem(w http.ResponseWriter, r *http.Request) {

@@ -29,6 +29,7 @@ services:
       KEY_BROKER_CLIENT_SECRET: ${KEY_BROKER_CLIENT_SECRET}
       ALICE_PASSWORD: ${ALICE_PASSWORD}
       BOB_PASSWORD: ${BOB_PASSWORD}
+      EVE_PASSWORD: ${EVE_PASSWORD}
     volumes:
       - ./keycloak/realm-playground.json:/opt/keycloak/data/import/realm-playground.json:ro
     ports:
@@ -64,6 +65,7 @@ services:
       LITELLM_URL: http://litellm:4000
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       WELLKNOWN_PATH: /config/opencode.json
+      ACCESS_GROUPS: /llm-users
     volumes:
       - ./key-broker/opencode.json:/config/opencode.json:ro
     depends_on:

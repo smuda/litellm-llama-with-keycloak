@@ -27,6 +27,11 @@ func main() {
 		}
 		return v
 	}
+	accessGroups := parseAccessGroups(env("ACCESS_GROUPS"))
+	if len(accessGroups) == 0 {
+		slog.Error("ACCESS_GROUPS has no groups")
+		os.Exit(1)
+	}
 	// The issuer is the browser-facing URL; discovery goes over the compose network.
 	ctx := oidc.InsecureIssuerURLContext(context.Background(), env("OIDC_ISSUER"))
 	var provider *oidc.Provider
@@ -51,11 +56,12 @@ func main() {
 			RedirectURL:  env("PUBLIC_URL") + "/callback",
 			Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
 		},
-		verifier:   provider.Verifier(&oidc.Config{ClientID: env("OIDC_CLIENT_ID")}),
-		litellmURL: env("LITELLM_URL"),
-		masterKey:  env("LITELLM_MASTER_KEY"),
-		wellknown:  env("WELLKNOWN_PATH"),
-		client:     &http.Client{Timeout: 15 * time.Second},
+		verifier:     provider.Verifier(&oidc.Config{ClientID: env("OIDC_CLIENT_ID")}),
+		litellmURL:   env("LITELLM_URL"),
+		masterKey:    env("LITELLM_MASTER_KEY"),
+		wellknown:    env("WELLKNOWN_PATH"),
+		client:       &http.Client{Timeout: 15 * time.Second},
+		accessGroups: accessGroups,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/opencode", func(w http.ResponseWriter, r *http.Request) {
@@ -105,11 +111,17 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var claims struct {
-		Username string `json:"preferred_username"`
-		Email    string `json:"email"`
+		Username string   `json:"preferred_username"`
+		Email    string   `json:"email"`
+		Groups   []string `json:"groups"`
 	}
 	if err := idt.Claims(&claims); err != nil || claims.Username == "" {
 		http.Error(w, "missing claims", http.StatusBadGateway)
+		return
+	}
+	if !inAccessGroup(claims.Groups, b.accessGroups) {
+		slog.Warn("not in an access group", "user", claims.Username, "groups", claims.Groups, "access_groups", b.accessGroups)
+		http.Error(w, "You are not in an access group for this service. Contact your administrator.", http.StatusForbidden)
 		return
 	}
 	code, err := randomString()

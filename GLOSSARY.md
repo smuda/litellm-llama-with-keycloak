@@ -35,3 +35,9 @@ _Avoid_: dev, local, test environment
 The shared deployment developers use for real work, with Keycloak
 running on a machine of its own.
 _Avoid_: prod, live, server
+
+**Access group**:
+A Keycloak group, synced from LDAP in production, whose members may
+get a virtual key. A user must belong to at least one access group;
+other groups the user is in do not count.
+_Avoid_: allowed group, role, team

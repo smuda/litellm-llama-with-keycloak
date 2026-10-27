@@ -21,5 +21,7 @@ services:
       PUBLIC_URL: https://llm.example.internal/broker
       OIDC_ISSUER: https://keycloak.example.internal/realms/playground
       OIDC_DISCOVERY_URL: https://keycloak.example.internal/realms/playground
+      # LDAP-synced group paths, comma-separated full paths, from .env.
+      ACCESS_GROUPS: ${ACCESS_GROUPS:?set ACCESS_GROUPS in .env}
     volumes:
       - ./key-broker/opencode.production.json:/config/opencode.json:ro

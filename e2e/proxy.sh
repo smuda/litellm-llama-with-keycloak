@@ -5,6 +5,8 @@ set -euo pipefail
 
 BASE=http://localhost:4000
 PROD="-f docker-compose.yml -f docker-compose.prod.yml"
+# The production override requires it; any value will do for config checks.
+export ACCESS_GROUPS=${ACCESS_GROUPS:-/e2e}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 

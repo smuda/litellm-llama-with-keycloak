@@ -2,6 +2,10 @@
   "realm": "playground",
   "enabled": true,
   "sslRequired": "none",
+  "groups": [
+    { "name": "llm-users", "path": "/llm-users" },
+    { "name": "foobar", "path": "/foobar" }
+  ],
   "clients": [
     {
       "clientId": "key-broker",
@@ -11,7 +15,22 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "secret": "${KEY_BROKER_CLIENT_SECRET}",
-      "redirectUris": ["http://localhost:4000/broker/callback"]
+      "redirectUris": ["http://localhost:4000/broker/callback"],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "full.path": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "false",
+            "claim.name": "groups"
+          }
+        }
+      ]
     }
   ],
   "users": [
@@ -22,6 +41,7 @@
       "emailVerified": true,
       "firstName": "Alice",
       "lastName": "Example",
+      "groups": ["/llm-users", "/foobar"],
       "credentials": [
         { "type": "password", "value": "${ALICE_PASSWORD}", "temporary": false }
       ]
@@ -33,8 +53,21 @@
       "emailVerified": true,
       "firstName": "Bob",
       "lastName": "Example",
+      "groups": ["/llm-users", "/foobar"],
       "credentials": [
         { "type": "password", "value": "${BOB_PASSWORD}", "temporary": false }
+      ]
+    },
+    {
+      "username": "eve",
+      "enabled": true,
+      "email": "eve@example.com",
+      "emailVerified": true,
+      "firstName": "Eve",
+      "lastName": "Example",
+      "groups": ["/foobar"],
+      "credentials": [
+        { "type": "password", "value": "${EVE_PASSWORD}", "temporary": false }
       ]
     }
   ]
