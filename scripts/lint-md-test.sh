@@ -38,4 +38,7 @@ make -s -f "$mk" lint-md || { echo "FAIL untouched long line"; fail=1; }
 out=$(printf '%s\n' "$(rep b 73)" >>old.md; git add old.md; make -s -f "$mk" lint-md 2>&1) && fail=1
 case $out in *old.md*bbb*) ;; *) echo "FAIL output lacks file/line: $out"; fail=1 ;; esac
 
+rm -rf .git
+make -s -f "$mk" lint-md >/dev/null 2>&1 && { echo "FAIL passes outside a repo"; fail=1; }
+
 exit $fail

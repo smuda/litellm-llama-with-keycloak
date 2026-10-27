@@ -19,6 +19,9 @@ go build ./... && go vet ./... && go test ./...
 Fix a failing build before making the next change. `make build`
 builds both modules into `<module>/bin/`.
 
+Tooling self-tests (Makefile targets, hooks) live in
+`scripts/*-test.sh` and run from `make test`.
+
 ## Check facts, don't guess
 
 Before you rely on a package, import path or function signature,

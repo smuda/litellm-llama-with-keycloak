@@ -1,3 +1,6 @@
+# Flags ride in SHELL: macOS ships make 3.81, which has no .SHELLFLAGS.
+SHELL := bash -euo pipefail
+
 MODULES := key-broker login-helper
 
 .PHONY: build lint lint-md test hooks e2e llama-playground llama-production $(MODULES)
@@ -8,14 +11,14 @@ $(MODULES):
 	cd $@ && go build -o bin/$@ ./cmd/$@
 
 lint: lint-md
-	@set -e; for m in $(MODULES); do (cd $$m && golangci-lint run); done
+	@for m in $(MODULES); do (cd $$m && golangci-lint run); done
 
 # Only staged additions are checked, so untouched long lines pass.
 # Lines before the first @@ of each file are headers, which is how an
 # added line starting with "++" is told apart from a "+++" header.
 # perl -CSD counts characters; macOS awk counts bytes.
 lint-md:
-	@set -o pipefail; git -c core.quotePath=false diff --cached --no-color \
+	@git -c core.quotePath=false diff --cached --no-color \
 	  --no-ext-diff --no-textconv --src-prefix=a/ --dst-prefix=b/ -U0 -- '*.md' | \
 	  perl -CSD -ne \
 	  '$$hdr = 1 if /^diff /; $$hdr = 0 if /^@@/; s/\r?\n\z//; \
@@ -25,7 +28,7 @@ lint-md:
 
 test:
 	@./scripts/lint-md-test.sh
-	@set -e; for m in $(MODULES); do (cd $$m && go test ./...); done
+	@for m in $(MODULES); do (cd $$m && go test ./...); done
 
 hooks:
 	git config core.hooksPath .githooks
