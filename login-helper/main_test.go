@@ -51,9 +51,9 @@ func TestRedeem(t *testing.T) {
 		var gotBody map[string]string
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotPath, gotMethod = r.URL.Path, r.Method
-			json.NewDecoder(r.Body).Decode(&gotBody)
+			_ = json.NewDecoder(r.Body).Decode(&gotBody)
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"key":"sk-test"}`))
+			_, _ = w.Write([]byte(`{"key":"sk-test"}`))
 		}))
 		defer srv.Close()
 
@@ -84,7 +84,7 @@ func TestRedeem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.status)
-				w.Write([]byte(tt.body))
+				_, _ = w.Write([]byte(tt.body))
 			}))
 			defer srv.Close()
 

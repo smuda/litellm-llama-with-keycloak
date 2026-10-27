@@ -92,5 +92,7 @@ func (b *broker) handleRedeem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"key": key})
+	if err := json.NewEncoder(w).Encode(map[string]string{"key": key}); err != nil {
+		slog.Error("write key response failed", "user", c.user, "error", err)
+	}
 }

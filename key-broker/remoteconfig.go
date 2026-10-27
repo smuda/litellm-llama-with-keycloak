@@ -63,5 +63,5 @@ func (b *broker) handleRemoteConfig(w http.ResponseWriter, r *http.Request) {
 
 func writeLoginPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(loginPage))
+	_, _ = w.Write([]byte(loginPage))
 }

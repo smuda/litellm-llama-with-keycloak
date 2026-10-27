@@ -132,8 +132,10 @@ config.
 
 - `make build` builds both Go modules, into `key-broker/bin/` and
   `login-helper/bin/`.
-- `cd key-broker && go test ./...` and
-  `cd login-helper && go test ./...` run the unit tests.
+- `make test` runs the unit tests in both Go modules.
+- `make lint` runs golangci-lint in both Go modules.
+- `make hooks` installs the pre-commit hook that runs lint and test.
+  Run it once per clone.
 - `docker compose up --build -d` / `docker compose down` manage the
   stack. Keycloak takes a minute to start; the key broker waits for
   it.

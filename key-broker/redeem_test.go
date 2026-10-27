@@ -28,7 +28,7 @@ func newRedeemBroker(t *testing.T, keyStatus int) (*broker, *fakeLiteLLM) {
 		var req struct {
 			UserID string `json:"user_id"`
 		}
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		f.mu.Lock()
 		f.generatedFor = append(f.generatedFor, req.UserID)
 		f.mu.Unlock()
@@ -36,7 +36,7 @@ func newRedeemBroker(t *testing.T, keyStatus int) (*broker, *fakeLiteLLM) {
 			http.Error(w, "boom", f.keyStatus)
 			return
 		}
-		w.Write([]byte(`{"key":"sk-test"}`))
+		_, _ = w.Write([]byte(`{"key":"sk-test"}`))
 	}))
 	t.Cleanup(srv.Close)
 	return &broker{st: newStore(), litellmURL: srv.URL, client: srv.Client()}, f

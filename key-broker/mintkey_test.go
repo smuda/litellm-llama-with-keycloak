@@ -55,11 +55,11 @@ func TestMintKey(t *testing.T) {
 						w.WriteHeader(tc.infoStatus)
 						return
 					}
-					w.Write([]byte(`{"user_id":"` + tc.infoUser + `","user_info":{"user_role":` + tc.role + `}}`))
+					_, _ = w.Write([]byte(`{"user_id":"` + tc.infoUser + `","user_info":{"user_role":` + tc.role + `}}`))
 				case "/user/update":
 					w.WriteHeader(tc.updStatus)
 				case "/key/generate":
-					w.Write([]byte(`{"key":"sk-new"}`))
+					_, _ = w.Write([]byte(`{"key":"sk-new"}`))
 				default:
 					http.NotFound(w, r)
 				}

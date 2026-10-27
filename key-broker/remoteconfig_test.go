@@ -48,11 +48,11 @@ func TestHandleRemoteConfig(t *testing.T) {
 		}
 		switch r.URL.Query().Get("key") {
 		case "sk-fresh":
-			w.Write([]byte(expiry(14 * day)))
+			_, _ = w.Write([]byte(expiry(14 * day)))
 		case "sk-stale":
-			w.Write([]byte(expiry(6 * day)))
+			_, _ = w.Write([]byte(expiry(6 * day)))
 		case "sk-forever":
-			w.Write([]byte(`{"info":{"expires":null}}`))
+			_, _ = w.Write([]byte(`{"info":{"expires":null}}`))
 		case "sk-broken":
 			w.WriteHeader(http.StatusInternalServerError)
 		default:

@@ -1,11 +1,20 @@
 MODULES := key-broker login-helper
 
-.PHONY: build e2e llama-playground llama-production $(MODULES)
+.PHONY: build lint test hooks e2e llama-playground llama-production $(MODULES)
 
 build: $(MODULES)
 
 $(MODULES):
 	cd $@ && go build -o bin/$@ .
+
+lint:
+	@set -e; for m in $(MODULES); do (cd $$m && golangci-lint run); done
+
+test:
+	@set -e; for m in $(MODULES); do (cd $$m && go test ./...); done
+
+hooks:
+	git config core.hooksPath .githooks
 
 e2e:
 	./e2e/proxy.sh

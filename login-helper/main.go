@@ -40,7 +40,7 @@ func redeem(brokerURL, code, verifier string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("redeem: status %d", resp.StatusCode)
 	}
@@ -91,19 +91,29 @@ func run(broker string) error {
 			if err != nil {
 				http.Error(w, "Login failed, see the terminal.", http.StatusBadGateway)
 			} else {
-				fmt.Fprint(w, "Login complete. You can close this tab.")
+				_, _ = fmt.Fprint(w, "Login complete. You can close this tab.")
 			}
-			results <- result{key, err}
+			select {
+			case results <- result{key, err}:
+			default:
+			}
 		})
 	})
 	srv := &http.Server{Handler: mux}
-	go srv.Serve(ln)
-	defer srv.Shutdown(context.Background())
+	go func() {
+		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			select {
+			case results <- result{err: err}:
+			default:
+			}
+		}
+	}()
+	defer func() { _ = srv.Shutdown(context.Background()) }()
 
 	loginURL := fmt.Sprintf("%s/login?port=%d&challenge=%s", broker,
 		ln.Addr().(*net.TCPAddr).Port, url.QueryEscape(challengeFor(verifier)))
 	fmt.Fprintln(os.Stderr, "Open this URL to log in:", loginURL)
-	exec.Command("open", loginURL).Start()
+	_ = exec.Command("open", loginURL).Start()
 
 	select {
 	case res := <-results:

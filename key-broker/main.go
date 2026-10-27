@@ -73,7 +73,10 @@ func main() {
 	mux.HandleFunc("POST /redeem", b.handleRedeem)
 	mux.HandleFunc("GET /remote-config", b.handleRemoteConfig)
 	slog.Info("Starting server on :8090")
-	http.ListenAndServe(":8090", mux)
+	if err := http.ListenAndServe(":8090", mux); err != nil {
+		slog.Error("server failed", "error", err)
+		os.Exit(1)
+	}
 }
 
 func (b *broker) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +209,7 @@ func (b *broker) litellm(ctx context.Context, method, path string, body any) ([]
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	out, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode == http.StatusConflict {
 		return nil, fmt.Errorf("%s: %w", path, errConflict)
