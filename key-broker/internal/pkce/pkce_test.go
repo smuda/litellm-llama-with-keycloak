@@ -1,4 +1,4 @@
-package main
+package pkce
 
 import "testing"
 
@@ -7,7 +7,7 @@ const (
 	testChallenge = "xV-H5naeMh3Vvh-GBIURNUinSkKCrG9nYXDjUSrs7Io"
 )
 
-func TestVerifyChallenge(t *testing.T) {
+func TestVerify(t *testing.T) {
 	tests := []struct {
 		name      string
 		verifier  string
@@ -22,8 +22,8 @@ func TestVerifyChallenge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := verifyChallenge(tt.verifier, tt.challenge); got != tt.want {
-				t.Errorf("verifyChallenge(%q, %q) = %v, want %v", tt.verifier, tt.challenge, got, tt.want)
+			if got := Verify(tt.verifier, tt.challenge); got != tt.want {
+				t.Errorf("Verify(%q, %q) = %v, want %v", tt.verifier, tt.challenge, got, tt.want)
 			}
 		})
 	}

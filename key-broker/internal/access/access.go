@@ -1,11 +1,11 @@
-package main
+package access
 
 import (
 	"slices"
 	"strings"
 )
 
-func parseAccessGroups(s string) []string {
+func ParseGroups(s string) []string {
 	var out []string
 	for _, g := range strings.Split(s, ",") {
 		if g = strings.TrimSpace(g); g != "" {
@@ -15,7 +15,7 @@ func parseAccessGroups(s string) []string {
 	return out
 }
 
-func accessGroupsOf(groups, access []string) []string {
+func GroupsOf(groups, access []string) []string {
 	var out []string
 	for _, g := range groups {
 		if slices.Contains(access, g) {

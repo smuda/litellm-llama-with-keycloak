@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"encoding/json"
@@ -9,6 +9,8 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
+
+	"github.com/smuda/litellm-llama-with-keycloak/key-broker/internal/pkce"
 )
 
 type pending struct{ port, challenge string }
@@ -60,7 +62,7 @@ func take[V any](s *store, m map[string]entry[V], k string) (V, bool) {
 	return e.v, true
 }
 
-type broker struct {
+type Broker struct {
 	st           *store
 	oauth        *oauth2.Config
 	verifier     *oidc.IDTokenVerifier
@@ -72,7 +74,23 @@ type broker struct {
 	groupsClaim  string
 }
 
-func (b *broker) handleRedeem(w http.ResponseWriter, r *http.Request) {
+func New(oauth *oauth2.Config, verifier *oidc.IDTokenVerifier,
+	litellmURL, masterKey, wellknown string,
+	accessGroups []string, groupsClaim string) *Broker {
+	return &Broker{
+		st:           newStore(),
+		oauth:        oauth,
+		verifier:     verifier,
+		litellmURL:   litellmURL,
+		masterKey:    masterKey,
+		wellknown:    wellknown,
+		client:       &http.Client{Timeout: 15 * time.Second},
+		accessGroups: accessGroups,
+		groupsClaim:  groupsClaim,
+	}
+}
+
+func (b *Broker) HandleRedeem(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Code     string `json:"code"`
 		Verifier string `json:"verifier"`
@@ -82,7 +100,7 @@ func (b *broker) handleRedeem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c, ok := take(b.st, b.st.codes, req.Code)
-	if !ok || !verifyChallenge(req.Verifier, c.challenge) {
+	if !ok || !pkce.Verify(req.Verifier, c.challenge) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}

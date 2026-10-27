@@ -1,4 +1,4 @@
-package main
+package login
 
 import (
 	"bytes"
@@ -53,18 +53,7 @@ func redeem(brokerURL, code, verifier string) (string, error) {
 	return out.Key, nil
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: login-helper <broker-url>")
-		os.Exit(2)
-	}
-	if err := run(strings.TrimRight(os.Args[1], "/")); err != nil {
-		fmt.Fprintln(os.Stderr, "login-helper:", err)
-		os.Exit(1)
-	}
-}
-
-func run(broker string) error {
+func Run(broker string) error {
 	verifier, err := newVerifier()
 	if err != nil {
 		return err

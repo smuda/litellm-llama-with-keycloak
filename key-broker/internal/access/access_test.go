@@ -1,11 +1,11 @@
-package main
+package access
 
 import (
 	"reflect"
 	"testing"
 )
 
-func TestParseAccessGroups(t *testing.T) {
+func TestParseGroups(t *testing.T) {
 	tests := []struct {
 		name string
 		in   string
@@ -18,18 +18,18 @@ func TestParseAccessGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseAccessGroups(tt.in)
+			got := ParseGroups(tt.in)
 			if len(got) == 0 && len(tt.want) == 0 {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseAccessGroups(%q) = %q, want %q", tt.in, got, tt.want)
+				t.Errorf("ParseGroups(%q) = %q, want %q", tt.in, got, tt.want)
 			}
 		})
 	}
 }
 
-func TestAccessGroupsOf(t *testing.T) {
+func TestGroupsOf(t *testing.T) {
 	tests := []struct {
 		name   string
 		groups []string
@@ -49,8 +49,8 @@ func TestAccessGroupsOf(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := accessGroupsOf(tt.groups, tt.access); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("accessGroupsOf(%q, %q) = %q, want %q", tt.groups, tt.access, got, tt.want)
+			if got := GroupsOf(tt.groups, tt.access); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GroupsOf(%q, %q) = %q, want %q", tt.groups, tt.access, got, tt.want)
 			}
 		})
 	}

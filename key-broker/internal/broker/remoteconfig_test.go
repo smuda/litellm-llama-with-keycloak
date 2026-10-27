@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"fmt"
@@ -65,7 +65,7 @@ func TestHandleRemoteConfig(t *testing.T) {
 	if err := os.WriteFile(path, []byte(wellknown), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	b := &broker{litellmURL: srv.URL, masterKey: "master", client: srv.Client(), wellknown: path}
+	b := &Broker{litellmURL: srv.URL, masterKey: "master", client: srv.Client(), wellknown: path}
 
 	for _, tc := range []struct {
 		name   string
@@ -89,7 +89,7 @@ func TestHandleRemoteConfig(t *testing.T) {
 				req.Header.Set("Authorization", tc.auth)
 			}
 			rec := httptest.NewRecorder()
-			b.handleRemoteConfig(rec, req)
+			b.HandleRemoteConfig(rec, req)
 
 			if rec.Code != tc.status {
 				t.Fatalf("status %d, want %d", rec.Code, tc.status)

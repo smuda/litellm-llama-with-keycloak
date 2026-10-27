@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"context"
@@ -20,7 +20,7 @@ func freshEnough(expires *time.Time, now time.Time) bool {
 	return expires == nil || expires.Sub(now) >= minKeyLife
 }
 
-func (b *broker) keyExpires(ctx context.Context, key string) (*time.Time, error) {
+func (b *Broker) keyExpires(ctx context.Context, key string) (*time.Time, error) {
 	out, err := b.litellm(ctx, "GET", "/key/info?key="+url.QueryEscape(key), nil)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (b *broker) keyExpires(ctx context.Context, key string) (*time.Time, error)
 	return res.Info.Expires, nil
 }
 
-func (b *broker) handleRemoteConfig(w http.ResponseWriter, r *http.Request) {
+func (b *Broker) HandleRemoteConfig(w http.ResponseWriter, r *http.Request) {
 	key, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 	if !ok || key == "" {
 		writeLoginPage(w)
@@ -64,4 +64,9 @@ func (b *broker) handleRemoteConfig(w http.ResponseWriter, r *http.Request) {
 func writeLoginPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write([]byte(loginPage))
+}
+
+func (b *Broker) HandleWellKnown(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	http.ServeFile(w, r, b.wellknown)
 }

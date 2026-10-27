@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"context"
@@ -55,7 +55,7 @@ func TestCallbackGroupsClaim(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			b := &broker{
+			b := &Broker{
 				oauth:        &oauth2.Config{ClientID: "key-broker", Endpoint: oauth2.Endpoint{TokenURL: srv.URL + "/token"}},
 				verifier:     oidc.NewVerifier(issuer, &oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{&key.PublicKey}}, &oidc.Config{ClientID: "key-broker"}),
 				groupsClaim:  "key_broker_groups",
@@ -66,7 +66,7 @@ func TestCallbackGroupsClaim(t *testing.T) {
 
 			req := httptest.NewRequest("GET", "/callback?state=s1&code=abc", nil).WithContext(context.Background())
 			rec := httptest.NewRecorder()
-			b.handleCallback(rec, req)
+			b.HandleCallback(rec, req)
 
 			if rec.Code != tc.want {
 				t.Fatalf("status = %d, want %d (body %q)", rec.Code, tc.want, rec.Body.String())

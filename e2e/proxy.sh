@@ -80,7 +80,7 @@ big_body_not_413() {
 }
 
 rules_served() {
-  curl -sSf "$BASE/opencode/rules.md" | cmp -s - key-broker/rules.md
+  curl -sSf "$BASE/opencode/rules.md" | cmp -s - key-broker/config/rules.md
 }
 
 # A key minted for an internal_user_viewer must not be able to mint more keys.

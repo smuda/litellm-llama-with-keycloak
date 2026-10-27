@@ -75,9 +75,12 @@ Full step-by-step instructions with the PATH gotcha are in
 ## Repository layout
 
 - `key-broker/` — Go service: OIDC flow, key minting, `/redeem`,
-  `/remote-config` and the served `opencode.json`.
+  `/remote-config`. Entrypoint in `cmd/key-broker/`, logic under
+  `internal/`, served files (`opencode.json`, `rules.md`) in
+  `config/`.
 - `login-helper/` — Go program opencode runs on the developer's
-  machine.
+  machine. Entrypoint in `cmd/login-helper/`, logic under
+  `internal/login/`.
 - `litellm/config.yaml` — LiteLLM `model_list` and settings.
 - `keycloak/realm-playground.json` — realm, `alice`, `bob`, `eve`
   (in no access group), the groups, and the `key-broker`
@@ -109,7 +112,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 - Replace the `llm.example.internal` and `keycloak.example.internal`
   placeholders in `docker-compose.prod.yml` and
-  `key-broker/opencode.production.json`.
+  `key-broker/config/opencode.production.json`.
 - Replace the placeholder scraper IP in
   `nginx/metrics-access.production.conf`.
 - Put the certificate and key in a directory as `tls.crt` and

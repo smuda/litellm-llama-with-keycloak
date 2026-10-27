@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func TestMintKey(t *testing.T) {
 				}
 			}))
 			defer srv.Close()
-			b := &broker{litellmURL: srv.URL, client: srv.Client()}
+			b := &Broker{litellmURL: srv.URL, client: srv.Client()}
 
 			key, err := b.mintKey(context.Background(), "alice", "alice@example.com")
 			if !reflect.DeepEqual(paths, tc.wantPaths) {

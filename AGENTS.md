@@ -3,9 +3,10 @@
 ## Layout
 
 - Go 1.27. Two modules, `key-broker/` and `login-helper/`, joined by
-  `go.work` at the repo root.
-- `key-broker/opencode.json` is served to every opencode client. Do
-  not change it unless asked.
+  `go.work` at the repo root. Each has its entrypoint in
+  `cmd/<module>/main.go` and its logic under `internal/`.
+- `key-broker/config/opencode.json` is served to every opencode client.
+  Do not change it unless asked.
 
 ## Build and test
 
@@ -38,6 +39,6 @@ unavailable.
   `logout`.
 - Keep each change small and build after it. Do not revert working
   changes because a later step fails; fix the later step.
-- Do not add scratch files to a module directory. A second
-  `func main()` in `package main` breaks the build.
+- Do not add scratch files to a module directory. `go build ./...`
+  and the linter pick them up.
 - Do not commit unless asked.

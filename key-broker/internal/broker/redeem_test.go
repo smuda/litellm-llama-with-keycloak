@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"encoding/json"
@@ -12,13 +12,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// Only stored and compared by the broker tests; PKCE math is tested in internal/pkce.
+const testChallenge = "xV-H5naeMh3Vvh-GBIURNUinSkKCrG9nYXDjUSrs7Io"
+
 type fakeLiteLLM struct {
 	mu           sync.Mutex
 	keyStatus    int
 	generatedFor []string
 }
 
-func newRedeemBroker(t *testing.T, keyStatus int) (*broker, *fakeLiteLLM) {
+func newRedeemBroker(t *testing.T, keyStatus int) (*Broker, *fakeLiteLLM) {
 	t.Helper()
 	f := &fakeLiteLLM{keyStatus: keyStatus}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +42,7 @@ func newRedeemBroker(t *testing.T, keyStatus int) (*broker, *fakeLiteLLM) {
 		_, _ = w.Write([]byte(`{"key":"sk-test"}`))
 	}))
 	t.Cleanup(srv.Close)
-	return &broker{st: newStore(), litellmURL: srv.URL, client: srv.Client()}, f
+	return &Broker{st: newStore(), litellmURL: srv.URL, client: srv.Client()}, f
 }
 
 func (f *fakeLiteLLM) checkMints(t *testing.T, want int) {
@@ -76,7 +79,7 @@ func TestHandleRedeem(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPost, "/redeem", strings.NewReader(tt.body))
 			rec := httptest.NewRecorder()
-			b.handleRedeem(rec, req)
+			b.HandleRedeem(rec, req)
 
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status = %d, want %d; body %q", rec.Code, tt.wantStatus, rec.Body.String())
@@ -133,7 +136,7 @@ func TestRedeemSequence(t *testing.T) {
 			for i, s := range tt.steps {
 				now = now.Add(s.advance)
 				rec := httptest.NewRecorder()
-				b.handleRedeem(rec, httptest.NewRequest(http.MethodPost, "/redeem", strings.NewReader(s.body)))
+				b.HandleRedeem(rec, httptest.NewRequest(http.MethodPost, "/redeem", strings.NewReader(s.body)))
 				if rec.Code != s.wantStatus {
 					t.Fatalf("step %d: status = %d, want %d; body %q", i, rec.Code, s.wantStatus, rec.Body.String())
 				}
@@ -157,14 +160,14 @@ func TestHandleCallbackState(t *testing.T) {
 
 	t0 := time.Unix(1_000_000, 0)
 	now := t0
-	b := &broker{st: newStore(), oauth: &oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv.URL}}}
+	b := &Broker{st: newStore(), oauth: &oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv.URL}}}
 	b.st.now = func() time.Time { return now }
 	put(b.st, b.st.logins, "ok", pending{port: "1234", challenge: testChallenge})
 	put(b.st, b.st.logins, "old", pending{port: "1234", challenge: testChallenge})
 
 	call := func(state string) int {
 		rec := httptest.NewRecorder()
-		b.handleCallback(rec, httptest.NewRequest(http.MethodGet, "/callback?code=x&state="+state, nil))
+		b.HandleCallback(rec, httptest.NewRequest(http.MethodGet, "/callback?code=x&state="+state, nil))
 		return rec.Code
 	}
 	if got := call("nope"); got != http.StatusBadRequest {
@@ -184,7 +187,7 @@ func TestHandleCallbackState(t *testing.T) {
 
 func TestPutSweepsExpired(t *testing.T) {
 	now := time.Unix(1_000_000, 0)
-	b := &broker{st: newStore()}
+	b := &Broker{st: newStore()}
 	b.st.now = func() time.Time { return now }
 	put(b.st, b.st.codes, "old", issued{user: "u1"})
 	now = now.Add(ttl + time.Second)

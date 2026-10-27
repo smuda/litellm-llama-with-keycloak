@@ -92,7 +92,7 @@ It takes `-c` from `limit.context` in the opencode config the broker
 serves, so the two cannot drift. Change the context there, not on the
 command line.
 
-Playground (32 GB Mac), reading `key-broker/opencode.json`:
+Playground (32 GB Mac), reading `key-broker/config/opencode.json`:
 
 ```sh
 make llama-playground
@@ -117,7 +117,7 @@ place. IQ4_XS weights are about 2.2 GB smaller than Q4_K_M, which pays
 for a 64k q8_0 KV cache.
 
 Production (512 GB machine), reading
-`key-broker/opencode.production.json`:
+`key-broker/config/opencode.production.json`:
 
 ```sh
 make llama-production
