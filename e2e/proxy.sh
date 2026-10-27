@@ -10,7 +10,7 @@ PROD="-f docker-compose.yml -f docker-compose.prod.yml"
 # The production override requires them; any value will do for config checks.
 export ACCESS_GROUPS=${ACCESS_GROUPS:-/e2e}
 export GROUPS_CLAIM=${GROUPS_CLAIM:-key_broker_groups}
-tmp=$(mktemp -d)
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/e2e.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 
 # A missing required variable fails every compose call; stop here with
