@@ -29,27 +29,28 @@ func TestParseAccessGroups(t *testing.T) {
 	}
 }
 
-func TestInAccessGroup(t *testing.T) {
+func TestAccessGroupsOf(t *testing.T) {
 	tests := []struct {
 		name   string
 		groups []string
 		access []string
-		want   bool
+		want   []string
 	}{
-		{"member", []string{"/foobar", "/llm-users"}, []string{"/llm-users"}, true},
-		{"non-member", []string{"/foobar"}, []string{"/llm-users"}, false},
-		{"nil groups (missing claim)", nil, []string{"/llm-users"}, false},
-		{"empty groups", []string{}, []string{"/llm-users"}, false},
-		{"parent-only", []string{"/eng"}, []string{"/eng/llm-users"}, false},
-		{"child-only", []string{"/eng/llm-users"}, []string{"/eng"}, false},
-		{"bare name", []string{"llm-users"}, []string{"/llm-users"}, false},
-		{"case differs", []string{"/LLM-users"}, []string{"/llm-users"}, false},
-		{"second access group matches", []string{"/b"}, []string{"/a", "/b"}, true},
+		{"member", []string{"/foobar", "/llm-users"}, []string{"/llm-users"}, []string{"/llm-users"}},
+		{"non-member", []string{"/foobar"}, []string{"/llm-users"}, nil},
+		{"nil groups (missing claim)", nil, []string{"/llm-users"}, nil},
+		{"empty groups", []string{}, []string{"/llm-users"}, nil},
+		{"parent-only", []string{"/eng"}, []string{"/eng/llm-users"}, nil},
+		{"child-only", []string{"/eng/llm-users"}, []string{"/eng"}, nil},
+		{"bare name", []string{"llm-users"}, []string{"/llm-users"}, nil},
+		{"case differs", []string{"/LLM-users"}, []string{"/llm-users"}, nil},
+		{"second access group matches", []string{"/b"}, []string{"/a", "/b"}, []string{"/b"}},
+		{"several matches keep claim order", []string{"/b", "/x", "/a"}, []string{"/a", "/b"}, []string{"/b", "/a"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := inAccessGroup(tt.groups, tt.access); got != tt.want {
-				t.Errorf("inAccessGroup(%q, %q) = %v, want %v", tt.groups, tt.access, got, tt.want)
+			if got := accessGroupsOf(tt.groups, tt.access); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("accessGroupsOf(%q, %q) = %q, want %q", tt.groups, tt.access, got, tt.want)
 			}
 		})
 	}

@@ -119,11 +119,13 @@ func (b *broker) handleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing claims", http.StatusBadGateway)
 		return
 	}
-	if !inAccessGroup(claims.Groups, b.accessGroups) {
+	granted := accessGroupsOf(claims.Groups, b.accessGroups)
+	if len(granted) == 0 {
 		slog.Warn("not in an access group", "user", claims.Username, "groups", claims.Groups, "access_groups", b.accessGroups)
 		http.Error(w, "You are not in an access group for this service. Contact your administrator.", http.StatusForbidden)
 		return
 	}
+	slog.Info(fmt.Sprintf("user %s successfully authorized", claims.Username), "groups", granted)
 	code, err := randomString()
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)

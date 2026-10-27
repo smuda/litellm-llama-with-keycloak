@@ -15,6 +15,12 @@ func parseAccessGroups(s string) []string {
 	return out
 }
 
-func inAccessGroup(groups, access []string) bool {
-	return slices.ContainsFunc(groups, func(g string) bool { return slices.Contains(access, g) })
+func accessGroupsOf(groups, access []string) []string {
+	var out []string
+	for _, g := range groups {
+		if slices.Contains(access, g) {
+			out = append(out, g)
+		}
+	}
+	return out
 }
