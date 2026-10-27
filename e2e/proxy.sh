@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # e2e checks for the nginx front door. Run from the repo root against a
-# running playground stack (make e2e).
+# running playground stack; make e2e rebuilds and starts it first.
 set -euo pipefail
 
 BASE=http://localhost:4000
+REALM=http://localhost:8080/realms/playground
+LOGIN_PORT=54321
 PROD="-f docker-compose.yml -f docker-compose.prod.yml"
 # The production override requires them; any value will do for config checks.
 export ACCESS_GROUPS=${ACCESS_GROUPS:-/e2e}
@@ -11,8 +13,13 @@ export GROUPS_CLAIM=${GROUPS_CLAIM:-key_broker_groups}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-KEY=$(grep -E '^LITELLM_MASTER_KEY=' .env | head -n1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\$//")
+envval() { grep -E "^$1=" .env | head -n1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\$//"; }
+KEY=$(envval LITELLM_MASTER_KEY || true)
 [ -n "$KEY" ] || { echo "LITELLM_MASTER_KEY not found in .env" >&2; exit 2; }
+ALICE_PASSWORD=$(envval ALICE_PASSWORD || true)
+EVE_PASSWORD=$(envval EVE_PASSWORD || true)
+[ -n "$ALICE_PASSWORD" ] && [ -n "$EVE_PASSWORD" ] ||
+  { echo "ALICE_PASSWORD or EVE_PASSWORD not found in .env" >&2; exit 2; }
 
 # The key goes to curl via a config on stdin, so it never shows in argv.
 auth() { printf 'header = "Authorization: Bearer %s"\n' "$KEY" | curl -K - "$@"; }
@@ -105,6 +112,45 @@ viewer_key_cannot_mint() {
   return $rc
 }
 
+# Logs in as user with password through the Keycloak form, as a browser
+# would, and prints the broker callback's status and redirect target.
+# The callback's body lands in $tmp/<user>.callback.
+broker_login() { # user, password, verifier
+  local jar=$tmp/$1.jar challenge action loc
+  challenge=$(printf %s "$3" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+  action=$(curl -sSfL -c "$jar" -b "$jar" "$BASE/broker/login?port=$LOGIN_PORT&challenge=$challenge" |
+    grep -o 'action="[^"]*"' | head -n1 | sed -e 's/^action="//' -e 's/"$//' -e 's/&amp;/\&/g')
+  case $action in "$REALM/"*) ;; *) return 1 ;; esac
+  # The password reaches curl on stdin, so it never shows in argv.
+  loc=$(printf %s "$2" | curl -sS -c "$jar" -b "$jar" -o /dev/null -w '%{redirect_url}' \
+    --data-urlencode "username=$1" --data-urlencode password@- "$action")
+  case $loc in "$BASE/broker/callback?"*) ;; *) return 1 ;; esac
+  curl -sS -o "$tmp/$1.callback" -w '%{http_code} %{redirect_url}' "$loc"
+}
+
+alice_gets_key() {
+  local verifier out key rc=0
+  verifier=$(openssl rand -hex 32)
+  out=$(broker_login alice "$ALICE_PASSWORD" "$verifier") || return 1
+  case $out in "302 http://127.0.0.1:$LOGIN_PORT/done?code="*) ;; *) return 1 ;; esac
+  # Code and verifier together redeem a key, so they stay out of argv too.
+  key=$(printf '{"code":"%s","verifier":"%s"}' "${out#*code=}" "$verifier" |
+    curl -sSf -X POST -H 'Content-Type: application/json' --data-binary @- "$BASE/broker/redeem" | jq -er .key) || return 1
+  [ "$(printf 'header = "Authorization: Bearer %s"\n' "$key" |
+    curl -K - -sS -o "$tmp/alice.models" -w '%{http_code}' "$BASE/v1/models")" = 200 ] &&
+    jq -e '.data | map(.id) | index("medium")' "$tmp/alice.models" || rc=1
+  # stdin carries auth's config, so the key goes in a file instead.
+  printf '{"keys":["%s"]}' "$key" >"$tmp/alice.delete"
+  auth -sSf -o /dev/null -X POST -H 'Content-Type: application/json' --data-binary @"$tmp/alice.delete" "$BASE/key/delete" || rc=1
+  return $rc
+}
+
+eve_gets_403() {
+  local out
+  out=$(broker_login eve "$EVE_PASSWORD" "$(openssl rand -hex 32)") || return 1
+  [ "${out%% *}" = 403 ] && grep -q 'not in an access group' "$tmp/eve.callback"
+}
+
 nginx_t_playground() { docker compose exec -T nginx nginx -t; }
 
 nginx_t_production() {
@@ -117,6 +163,13 @@ prod_has_no_keycloak() {
   ! docker compose $PROD config --services | grep -qx keycloak
 }
 
+# Keycloak takes about a minute to start, and the login checks need it.
+deadline=$((SECONDS + 180))
+until curl -fs -m 5 -o /dev/null "$REALM"; do
+  [ "$SECONDS" -lt "$deadline" ] || { echo "Keycloak playground realm not ready after 180s" >&2; exit 1; }
+  sleep 2
+done
+
 check "published ports are only 4000 and 8080" published_ports_only_4000_8080
 check "broker /.well-known/opencode points at /broker" wellknown
 check "/v1/models with master key lists medium" models_lists_medium
@@ -125,6 +178,8 @@ check "/metrics/ is 200 without CORS header" metrics_no_cors
 check "/metrics traversal paths don't reach metrics" metrics_no_traversal
 check "/broker redirect keeps the port" broker_redirect_keeps_port
 check "/broker/login redirects with /broker/callback" login_redirect
+check "alice logs in and gets a virtual key" alice_gets_key
+check "eve gets 403 from the access group gate" eve_gets_403
 check "2 MB request body is not 413" big_body_not_413
 check "/opencode/rules.md is served" rules_served
 check "viewer key cannot mint keys but can list models" viewer_key_cannot_mint

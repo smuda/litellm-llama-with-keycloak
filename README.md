@@ -131,8 +131,8 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - Set `NODE_USE_SYSTEM_CA=1` so opencode trusts the internal CA. Not
   yet verified against a real host.
 
-`make e2e` checks the playground stack and the production nginx
-config.
+`make e2e` rebuilds and starts the playground stack, then checks it
+and the production nginx config.
 
 ## Development
 

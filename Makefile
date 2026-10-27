@@ -17,6 +17,7 @@ hooks:
 	git config core.hooksPath .githooks
 
 e2e:
+	docker compose -f docker-compose.yml up --build -d --wait
 	./e2e/proxy.sh
 
 # -c comes from limit.context in the opencode config the broker serves,
